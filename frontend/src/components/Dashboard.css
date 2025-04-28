@@ -1,0 +1,83 @@
+/* Dashboard Content */
+.dashboard-content {
+  padding: 40px;
+  background-color: #f9fafb;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Header */
+.dashboard-header {
+  background-color: #007bff;
+  color: white;
+  padding: 20px 30px;
+  border-radius: 10px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 30px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+}
+
+.dashboard-header h2 {
+  margin: 0;
+  font-size: 1.8rem;
+}
+
+.profile-link {
+  background-color: white;
+  color: #007bff;
+  padding: 10px 20px;
+  border-radius: 25px;
+  text-decoration: none;
+  font-weight: 500;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+.profile-link:hover {
+  background-color: #0056b3;
+  color: white;
+}
+
+/* Actions Section */
+.dashboard-actions {
+  background-color: white;
+  padding: 30px;
+  border-radius: 10px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+}
+
+.dashboard-actions h3 {
+  margin-top: 0;
+  font-size: 1.5rem;
+  color: #333;
+  margin-bottom: 20px;
+}
+
+.dashboard-actions ul {
+  list-style: none;
+  padding: 0;
+}
+
+.dashboard-actions ul li {
+  margin-bottom: 15px;
+}
+
+.dashboard-actions ul li a {
+  text-decoration: none;
+  color: #007bff;
+  font-size: 1.2rem;
+  font-weight: 500;
+  transition: color 0.3s ease;
+}
+
+.dashboard-actions ul li a:hover {
+  color: #0056b3;
+}
+/* Header Right Section */
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}

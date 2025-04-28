@@ -1,0 +1,204 @@
+/* Layout Container */
+.layout {
+  display: flex; /* Use flexbox for layout */
+  height: 100vh; /* Full viewport height */
+  width: 100vw; /* Full viewport width */
+  overflow: hidden; /* Prevent overflow */
+  background-color: #f4f4f4; /* Light background */
+}
+
+/* Sidebar */
+.sidebar {
+  width: 250px; /* Fixed width */
+  background: linear-gradient(135deg, #1e1e2f, #252540); /* Modern gradient background */
+  color: white; /* White text */
+  padding: 20px; /* Padding inside sidebar */
+  display: flex;
+  flex-direction: column; /* Stack items vertically */
+  justify-content: space-between; /* Distribute space evenly */
+  box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1); /* Subtle shadow */
+  transition: width 0.3s ease; /* Smooth transition when collapsing */
+}
+
+.sidebar.collapsed {
+  width: 80px; /* Collapsed width */
+}
+
+/* Menu Title */
+.menu-title {
+  font-size: 1.5rem;
+  margin-bottom: 20px;
+  font-weight: bold;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  transition: opacity 0.3s ease;
+}
+
+.sidebar.collapsed .menu-title {
+  opacity: 0; /* Hide title when collapsed */
+}
+
+/* Sidebar Links */
+.sidebar ul {
+  list-style: none;
+  padding: 0;
+}
+
+.sidebar ul li {
+  margin-bottom: 15px;
+}
+
+.sidebar ul li a {
+  text-decoration: none;
+  color: #fff;
+  font-size: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 15px;
+  border-radius: 8px;
+  transition: background 0.3s ease, color 0.3s ease;
+}
+
+.sidebar ul li a:hover {
+  background: #4caf50; /* Highlight links on hover */
+  color: white;
+}
+
+.sidebar ul li a svg {
+  margin-right: 10px;
+  font-size: 18px;
+}
+
+.sidebar.collapsed ul li a {
+  justify-content: center;
+}
+
+.sidebar.collapsed ul li a svg {
+  margin-right: 0;
+}
+
+/* Logout Button in Sidebar */
+.logout-button {
+  background-color: #e74c3c; /* Red background */
+  color: white; /* White text */
+  border: none;
+  padding: 10px;
+  border-radius: 8px;
+  cursor: pointer;
+  margin-top: auto; /* Align button at the bottom */
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  transition: background 0.3s ease, transform 0.2s ease;
+}
+
+.logout-button:hover {
+  background-color: #c0392b; /* Darker red on hover */
+  transform: scale(1.05); /* Slight zoom effect on hover */
+}
+
+/* Profile Section in Top Header */
+.top-header {
+  background: linear-gradient(135deg, #4caf50, #45a049); /* Gradient header */
+  color: white; /* White text */
+  padding: 20px; /* Padding inside header */
+  display: flex;
+  justify-content: space-between; /* Align items to the edges */
+  align-items: center; /* Center align items vertically */
+  border-radius: 10px; /* Rounded corners */
+  margin-bottom: 20px; /* Space below header */
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1); /* Subtle shadow */
+}
+
+.top-header h1 {
+  margin: 0;
+  font-size: 1.5rem; /* Title font size */
+}
+
+.profile-info {
+  display: flex;
+  align-items: center;
+  gap: 15px; /* Space between profile elements */
+}
+
+.profile-info img {
+  width: 40px; /* Avatar size */
+  height: 40px; /* Avatar size */
+  border-radius: 50%; /* Circular avatar */
+  object-fit: cover; /* Ensure avatar fits within the circle */
+}
+
+.profile-info .username {
+  font-size: 1rem; /* Size of user name text */
+}
+
+.profile-info .email {
+  font-size: 0.875rem; /* Smaller font for email */
+  color: #dcdcdc; /* Lighter color for email */
+}
+
+/* Main Content */
+.main-content {
+  flex-grow: 1; /* Take up all remaining space */
+  display: flex;
+  flex-direction: column; /* Stack items vertically */
+  padding: 20px; /* Padding inside the content */
+  background-color: white; /* White background */
+  border-radius: 10px; /* Rounded corners */
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1); /* Subtle shadow */
+  overflow-y: auto; /* Vertical scroll if needed */
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  /* Layout */
+  .layout {
+    flex-direction: column; /* Stack sidebar and content vertically */
+  }
+
+  /* Sidebar */
+  .sidebar {
+    width: 100%; /* Sidebar takes full width */
+    order: 1; /* Sidebar comes first on small screens */
+  }
+
+  .sidebar.collapsed {
+    width: 60px; /* Collapsed width for mobile */
+  }
+
+  .sidebar ul li {
+    margin-bottom: 10px; /* Reduced space for links */
+  }
+
+  /* Main Content */
+  .main-content {
+    margin: 10px;
+    padding: 10px;
+  }
+
+  /* Top Header */
+  .top-header {
+    padding: 10px; /* Less padding on smaller screens */
+    margin-bottom: 10px; /* Less space below header */
+  }
+
+  .top-header h1 {
+    font-size: 1.2rem; /* Adjust title font size for mobile */
+  }
+}
+
+/* Button */
+button {
+  background-color: #007bff; /* Blue background */
+  color: white; /* White text */
+  border: none;
+  padding: 10px 20px; /* Padding inside button */
+  border-radius: 5px; /* Rounded corners */
+  cursor: pointer;
+  transition: background-color 0.3s ease; /* Smooth hover transition */
+}
+
+button:hover {
+  background-color: #0056b3; /* Darker blue on hover */
+}
