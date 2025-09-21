@@ -1,0 +1,196 @@
+/* Floating Action Button - Dedicated CSS */
+
+/* Ensure FAB is completely isolated from parent containers */
+* {
+  box-sizing: border-box;
+}
+
+.fab {
+  position: fixed !important;
+  bottom: 24px !important;
+  right: 24px !important;
+  top: auto !important;
+  left: auto !important;
+  width: 64px !important;
+  height: 64px !important;
+  background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+  color: white;
+  border: 2px solid rgba(255, 255, 255, 0.2) !important;
+  border-radius: 50%;
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  font-weight: bold;
+  cursor: pointer;
+  box-shadow: 
+    0 8px 32px rgba(59, 130, 246, 0.3),
+    0 4px 12px rgba(0, 0, 0, 0.15);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: 9999 !important;
+  backdrop-filter: blur(10px);
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
+  will-change: transform;
+  pointer-events: auto;
+  isolation: isolate;
+  contain: layout style paint;
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+  margin: 0 !important;
+  padding: 0 !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  float: none !important;
+  clear: none !important;
+  /* Force fixed positioning */
+  position: fixed !important;
+  position: -webkit-sticky !important;
+  position: sticky !important;
+  position: fixed !important;
+}
+
+.fab:hover {
+  background: linear-gradient(135deg, #1d4ed8, #1e40af);
+  transform: scale(1.1) rotate(90deg) translateZ(0);
+  -webkit-transform: scale(1.1) rotate(90deg) translateZ(0);
+  box-shadow: 
+    0 12px 40px rgba(59, 130, 246, 0.4),
+    0 8px 20px rgba(0, 0, 0, 0.2);
+}
+
+.fab:active {
+  transform: scale(0.95) rotate(90deg) translateZ(0);
+  -webkit-transform: scale(0.95) rotate(90deg) translateZ(0);
+  box-shadow: 
+    0 4px 16px rgba(59, 130, 246, 0.3),
+    0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.fab:focus {
+  outline: none;
+  box-shadow: 
+    0 8px 32px rgba(59, 130, 246, 0.3),
+    0 4px 12px rgba(0, 0, 0, 0.15),
+    0 0 0 4px rgba(59, 130, 246, 0.2);
+}
+
+/* FAB Variants */
+.fab.notes {
+  background: linear-gradient(135deg, #ec4899, #be185d);
+}
+
+.fab.notes:hover {
+  background: linear-gradient(135deg, #be185d, #9f1239);
+  transform: scale(1.1) rotate(90deg) translateZ(0);
+  -webkit-transform: scale(1.1) rotate(90deg) translateZ(0);
+  box-shadow: 
+    0 12px 40px rgba(236, 72, 153, 0.4),
+    0 8px 20px rgba(0, 0, 0, 0.2);
+}
+
+.fab.entries {
+  background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+}
+
+.fab.entries:hover {
+  background: linear-gradient(135deg, #7c3aed, #6d28d9);
+  transform: scale(1.1) rotate(90deg) translateZ(0);
+  -webkit-transform: scale(1.1) rotate(90deg) translateZ(0);
+  box-shadow: 
+    0 12px 40px rgba(139, 92, 246, 0.4),
+    0 8px 20px rgba(0, 0, 0, 0.2);
+}
+
+.fab.tasks {
+  background: linear-gradient(135deg, #059669, #047857);
+}
+
+.fab.tasks:hover {
+  background: linear-gradient(135deg, #047857, #065f46);
+  transform: scale(1.1) rotate(90deg) translateZ(0);
+  -webkit-transform: scale(1.1) rotate(90deg) translateZ(0);
+  box-shadow: 
+    0 12px 40px rgba(5, 150, 105, 0.4),
+    0 8px 20px rgba(0, 0, 0, 0.2);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .fab {
+    bottom: 20px !important;
+    right: 20px !important;
+    width: 56px !important;
+    height: 56px !important;
+    font-size: 20px;
+  }
+}
+
+@media (max-width: 480px) {
+  .fab {
+    bottom: 16px !important;
+    right: 16px !important;
+    width: 52px !important;
+    height: 52px !important;
+    font-size: 18px;
+  }
+}
+
+/* Animation */
+@keyframes fabFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px) translateZ(0);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) translateZ(0);
+  }
+}
+
+.fab {
+  animation: fabFadeIn 0.4s ease-out;
+}
+
+/* Force FAB positioning - override any conflicting styles */
+button.fab,
+.fab[class*="fab"],
+.fab.tasks,
+.fab.notes,
+.fab.entries {
+  position: fixed !important;
+  bottom: 24px !important;
+  right: 24px !important;
+  top: auto !important;
+  left: auto !important;
+  z-index: 9999 !important;
+  display: flex !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  float: none !important;
+  clear: none !important;
+  transform: translateZ(0) !important;
+  -webkit-transform: translateZ(0) !important;
+}
+
+/* Ensure FAB is attached to viewport, not any parent container */
+html .fab,
+body .fab,
+#root .fab,
+.layout .fab,
+.main-content .fab,
+.content .fab {
+  position: fixed !important;
+  bottom: 24px !important;
+  right: 24px !important;
+  top: auto !important;
+  left: auto !important;
+  z-index: 9999 !important;
+}
