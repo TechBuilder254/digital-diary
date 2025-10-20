@@ -167,3 +167,4 @@ If you encounter any issues:
 2. Verify all prerequisites are installed
 3. Ensure database is running and accessible
 4. Check file permissions on upload directories
+

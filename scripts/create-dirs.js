@@ -61,3 +61,4 @@ function createDirectories() {
 
 // Run the script
 createDirectories();
+

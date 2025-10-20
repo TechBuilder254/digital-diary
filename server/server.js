@@ -70,6 +70,10 @@ app.use((err, req, res, next) => {
 
 // Server setup
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`);
+const HOST = process.env.HOST || '0.0.0.0'; // Bind to all interfaces
+
+app.listen(PORT, HOST, () => {
+  console.log(`Server is running on http://${HOST}:${PORT}`);
+  console.log(`Local access: http://localhost:${PORT}`);
+  console.log(`Network access: http://0.0.0.0:${PORT}`);
 });

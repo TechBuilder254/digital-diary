@@ -172,3 +172,4 @@ If you encounter any issues:
 Your Digital Diary now has a **professional-grade, cross-platform audio storage system** that will work reliably on Windows, Mac, and Linux systems. The audio recordings will persist permanently and provide a seamless user experience across all platforms!
 
 **Happy recording! 🎤✨**
+
