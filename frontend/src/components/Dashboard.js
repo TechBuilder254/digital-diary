@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { FaTasks, FaStickyNote, FaBook, FaSmile, FaClipboardList, FaChartLine, FaCalendarAlt, FaBell } from 'react-icons/fa';
+import { FaTasks, FaStickyNote, FaBook, FaSmile, FaClipboardList, FaChartLine, FaCalendarAlt, FaBell, FaRobot, FaTimes } from 'react-icons/fa';
 import './Dashboard.css';
 import '../styles/design-system.css';
 import AIAssistant from './AIAssistant';
@@ -8,6 +8,7 @@ import AIAssistant from './AIAssistant';
 const Dashboard = () => {
   const [username, setUsername] = useState('User');
   const [loading, setLoading] = useState(true);
+  const [showAIModal, setShowAIModal] = useState(false);
   const [stats, setStats] = useState({
     totalTasks: 0,
     completedTasks: 0,
@@ -22,6 +23,7 @@ const Dashboard = () => {
     recentMoods: [],
     recentTodos: []
   });
+  const [aiPreviewMessage, setAiPreviewMessage] = useState('');
 
   useEffect(() => {
     // Fetch username from localStorage
@@ -35,6 +37,28 @@ const Dashboard = () => {
     fetchDashboardStats();
   }, []);
 
+  // Close modal with ESC key
+  useEffect(() => {
+    const handleEscape = (e) => {
+      if (e.key === 'Escape' && showAIModal) {
+        setShowAIModal(false);
+      }
+    };
+
+    if (showAIModal) {
+      document.addEventListener('keydown', handleEscape);
+      // Prevent body scroll when modal is open
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+
+    return () => {
+      document.removeEventListener('keydown', handleEscape);
+      document.body.style.overflow = '';
+    };
+  }, [showAIModal]);
+
   const fetchDashboardStats = async () => {
     try {
       setLoading(true);
@@ -42,69 +66,95 @@ const Dashboard = () => {
       
       // Fetch all data in parallel
       const [tasksResponse, todosResponse, notesResponse, entriesResponse, moodsResponse] = await Promise.allSettled([
-        fetch('http://localhost:5000/api/tasks'),
-        fetch('http://localhost:5000/api/todo'),
-        fetch('http://localhost:5000/api/notes'),
-        fetch('http://localhost:5000/api/entries'),
-        fetch('http://localhost:5000/api/moods')
+        fetch('/api/tasks'),
+        fetch('/api/todo'),
+        fetch('/api/notes'),
+        fetch('/api/entries'),
+        fetch('/api/moods')
       ]);
 
       // Process each response
-      const tasks = tasksResponse.status === 'fulfilled' ? await tasksResponse.value.json() : [];
-      const todos = todosResponse.status === 'fulfilled' ? await todosResponse.value.json() : [];
-      const notes = notesResponse.status === 'fulfilled' ? await notesResponse.value.json() : [];
-      const entries = entriesResponse.status === 'fulfilled' ? await entriesResponse.value.json() : [];
-      const moods = moodsResponse.status === 'fulfilled' ? await moodsResponse.value.json() : [];
+      const tasks = tasksResponse.status === 'fulfilled' && tasksResponse.value.ok ? await tasksResponse.value.json().catch(() => []) : [];
+      const todos = todosResponse.status === 'fulfilled' && todosResponse.value.ok ? await todosResponse.value.json().catch(() => []) : [];
+      const notes = notesResponse.status === 'fulfilled' && notesResponse.value.ok ? await notesResponse.value.json().catch(() => []) : [];
+      const entries = entriesResponse.status === 'fulfilled' && entriesResponse.value.ok ? await entriesResponse.value.json().catch(() => []) : [];
+      const moods = moodsResponse.status === 'fulfilled' && moodsResponse.value.ok ? await moodsResponse.value.json().catch(() => []) : [];
+      
+      // Ensure all are arrays
+      const tasksArray = Array.isArray(tasks) ? tasks : [];
+      const todosArray = Array.isArray(todos) ? todos : [];
+      const notesArray = Array.isArray(notes) ? notes : [];
+      const entriesArray = Array.isArray(entries) ? entries : [];
+      const moodsArray = Array.isArray(moods) ? moods : [];
 
       console.log('Dashboard: Data fetched:', {
-        tasks: tasks.length,
-        todos: todos.length,
-        notes: notes.length,
-        entries: entries.length,
-        moods: moods.length
+        tasks: tasksArray.length,
+        todos: todosArray.length,
+        notes: notesArray.length,
+        entries: entriesArray.length,
+        moods: moodsArray.length
       });
 
       // Get today's mood
       const today = new Date().toDateString();
-      const todayMoodEntry = moods.find(mood => new Date(mood.date).toDateString() === today);
+      const todayMoodEntry = moodsArray.find(mood => new Date(mood.date).toDateString() === today);
 
-      const totalTasks = tasks.length + todos.length;
-      const completedTasks = tasks.filter(task => task.is_completed).length + todos.filter(todo => todo.completed).length;
+      const totalTasks = tasksArray.length + todosArray.length;
+      const completedTasks = tasksArray.filter(task => task.is_completed).length + todosArray.filter(todo => todo.completed).length;
       
       console.log('Dashboard: Calculated stats:', {
         totalTasks,
         completedTasks,
-        totalNotes: notes.length,
-        totalEntries: entries.length,
-        totalMoods: moods.length
+        totalNotes: notesArray.length,
+        totalEntries: entriesArray.length,
+        totalMoods: moodsArray.length
       });
 
       setStats({
         totalTasks: totalTasks || 0,
         completedTasks: completedTasks || 0,
-        totalNotes: notes.length || 0,
-        totalEntries: entries.length || 0,
-        totalMoods: moods.length || 0,
+        totalNotes: notesArray.length || 0,
+        totalEntries: entriesArray.length || 0,
+        totalMoods: moodsArray.length || 0,
         todayMood: todayMoodEntry ? todayMoodEntry.mood : 'Not set'
       });
 
       // Generate recent activity
-      generateRecentActivity(tasks, todos, notes, entries, moods);
+      generateRecentActivity(tasksArray, todosArray, notesArray, entriesArray, moodsArray);
       
       // Prepare data for AI Assistant
-      setAiData({
+      const aiDataObj = {
         userStats: {
-          totalTodos: (tasks.length + todos.length),
-          completedTodos: (tasks.filter(task => task.is_completed).length + todos.filter(todo => todo.completed).length),
-          totalNotes: notes.length,
-          totalMoods: moods.length
+          totalTodos: (tasksArray.length + todosArray.length),
+          completedTodos: (tasksArray.filter(task => task.is_completed).length + todosArray.filter(todo => todo.completed).length),
+          totalNotes: notesArray.length,
+          totalMoods: moodsArray.length
         },
-        recentMoods: moods.slice(0, 7).map(mood => ({
+        recentMoods: moodsArray.slice(0, 7).map(mood => ({
           rating: getMoodRating(mood.mood),
           date: mood.date
         })),
-        recentTodos: [...tasks, ...todos].slice(0, 10)
-      });
+        recentTodos: [...tasksArray, ...todosArray].slice(0, 10)
+      };
+      
+      setAiData(aiDataObj);
+      
+      // Generate preview message for AI teaser card
+      const aiTotalTodos = aiDataObj.userStats.totalTodos;
+      const aiCompletedTodos = aiDataObj.userStats.completedTodos;
+      const completionRate = aiTotalTodos > 0 ? (aiCompletedTodos / aiTotalTodos) * 100 : 0;
+      
+      if (completionRate >= 80 && aiTotalTodos > 0) {
+        setAiPreviewMessage("Great progress! You're doing amazing! 🎯");
+      } else if (completionRate >= 50 && aiTotalTodos > 0) {
+        setAiPreviewMessage("You're making steady progress! Keep it up! 📈");
+      } else if (aiTotalTodos > 0) {
+        setAiPreviewMessage("Ready to boost your productivity? Let's get started! 💪");
+      } else if (moodsArray.length > 0) {
+        setAiPreviewMessage("Your wellness journey looks great! Check your insights 🌟");
+      } else {
+        setAiPreviewMessage("Hi! I'm Samiya, your wellness companion. Tap to get started! 👋");
+      }
       
     } catch (error) {
       console.error('Error fetching dashboard stats:', error);
@@ -295,26 +345,74 @@ const Dashboard = () => {
         </div>
       </div>
 
-      {/* AI Assistant */}
-      <AIAssistant 
-        userStats={aiData.userStats}
-        recentMoods={aiData.recentMoods}
-        recentTodos={aiData.recentTodos}
-      />
+      {/* AI Assistant Teaser Card */}
+      <div className="ai-teaser-card" onClick={() => setShowAIModal(true)}>
+        <div className="ai-teaser-icon">
+          <FaRobot />
+        </div>
+        <div className="ai-teaser-content">
+          <div className="ai-teaser-title">Samiya AI Assistant</div>
+          <div className="ai-teaser-message">{aiPreviewMessage || "Hi! I'm here to help with your wellness journey 👋"}</div>
+        </div>
+        <div className="ai-teaser-arrow">→</div>
+      </div>
+
+      {/* AI Assistant Modal */}
+      {showAIModal && (
+        <div className="ai-modal-overlay" onClick={() => setShowAIModal(false)}>
+          <div className="ai-modal-content" onClick={(e) => e.stopPropagation()}>
+            <button 
+              className="ai-modal-close"
+              onClick={() => setShowAIModal(false)}
+              aria-label="Close AI Assistant"
+            >
+              <FaTimes />
+            </button>
+            <AIAssistant 
+              userStats={aiData.userStats}
+              recentMoods={aiData.recentMoods}
+              recentTodos={aiData.recentTodos}
+            />
+          </div>
+        </div>
+      )}
 
       {/* Statistics Cards */}
       <div className="stats-grid animate-fade-in" style={{ '--delay': '0.2s' }}>
-        {statCards.map((stat, index) => (
-          <div key={stat.title} className="stat-card" style={{ '--delay': `${index * 0.1}s` }}>
-            <div className="stat-icon" style={{ backgroundColor: stat.bgColor, color: stat.color }}>
-              <stat.icon />
+        {statCards.map((stat, index) => {
+          // Calculate additional stats for display
+          let additionalInfo = null;
+          if (stat.title === 'Total Tasks' && stats.totalTasks > 0) {
+            const completionRate = stats.completedTasks > 0 
+              ? Math.round((stats.completedTasks / stats.totalTasks) * 100) 
+              : 0;
+            additionalInfo = `${completionRate}% done`;
+          } else if (stat.title === 'Completed' && stats.totalTasks > 0) {
+            const remaining = stats.totalTasks - stats.completedTasks;
+            additionalInfo = `${remaining} remaining`;
+          } else if (stat.title === 'Notes' && stats.totalNotes > 0) {
+            additionalInfo = 'Active';
+          } else if (stat.title === 'Diary Entries' && stats.totalEntries > 0) {
+            additionalInfo = 'Journals';
+          } else if (stat.title === 'Mood Entries' && stats.totalMoods > 0) {
+            additionalInfo = stats.todayMood !== 'Not set' ? `Today: ${stats.todayMood}` : 'Tracked';
+          }
+          
+          return (
+            <div key={stat.title} className="stat-card" style={{ '--delay': `${index * 0.1}s` }}>
+              <div className="stat-icon" style={{ backgroundColor: stat.bgColor, color: stat.color }}>
+                <stat.icon />
+              </div>
+              <div className="stat-content">
+                <h3 className="stat-value">{stat.value}</h3>
+                <p className="stat-title">{stat.title}</p>
+                {additionalInfo && (
+                  <p className="stat-info">{additionalInfo}</p>
+                )}
+              </div>
             </div>
-            <div className="stat-content">
-              <h3 className="stat-value">{stat.value}</h3>
-              <p className="stat-title">{stat.title}</p>
-            </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       {/* Quick Actions */}

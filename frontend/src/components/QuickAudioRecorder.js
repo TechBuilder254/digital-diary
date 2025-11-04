@@ -28,19 +28,51 @@ const QuickAudioRecorder = ({ onSave, onCancel }) => {
 
   const startRecording = async () => {
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      // Request high-quality audio with echo cancellation and noise suppression
+      const audioConstraints = {
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true,
+          sampleRate: 48000, // High quality sample rate
+          channelCount: 1, // Mono is fine for voice
+          // Try to get the best quality available
+          googEchoCancellation: true,
+          googAutoGainControl: true,
+          googNoiseSuppression: true,
+          googHighpassFilter: true,
+          googTypingNoiseDetection: true,
+          googNoiseReduction: true
+        }
+      };
+
+      const stream = await navigator.mediaDevices.getUserMedia(audioConstraints);
       streamRef.current = stream;
 
-      const mediaRecorder = new MediaRecorder(stream);
+      // Configure MediaRecorder with high-quality settings
+      const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus') 
+        ? 'audio/webm;codecs=opus' 
+        : MediaRecorder.isTypeSupported('audio/webm') 
+        ? 'audio/webm' 
+        : 'audio/webm'; // Fallback
+
+      const options = {
+        mimeType: mimeType,
+        audioBitsPerSecond: 128000 // High bitrate for better quality (128 kbps)
+      };
+
+      const mediaRecorder = new MediaRecorder(stream, options);
       mediaRecorderRef.current = mediaRecorder;
 
       const chunks = [];
       mediaRecorder.ondataavailable = (event) => {
-        chunks.push(event.data);
+        if (event.data.size > 0) {
+          chunks.push(event.data);
+        }
       };
 
       mediaRecorder.onstop = () => {
-        const blob = new Blob(chunks, { type: 'audio/webm' });
+        const blob = new Blob(chunks, { type: mimeType || 'audio/webm' });
         const url = URL.createObjectURL(blob);
         
         setAudioBlob(blob);
@@ -55,7 +87,8 @@ const QuickAudioRecorder = ({ onSave, onCancel }) => {
         stream.getTracks().forEach(track => track.stop());
       };
 
-      mediaRecorder.start();
+      // Start recording with timeslice for better quality (collect data every 100ms)
+      mediaRecorder.start(100);
       setIsRecording(true);
       setRecordingTime(0);
 
@@ -88,7 +121,7 @@ const QuickAudioRecorder = ({ onSave, onCancel }) => {
         const formData = new FormData();
         formData.append('audio', audioBlob, `audio_${Date.now()}.webm`);
 
-        const uploadResponse = await fetch('http://localhost:5000/api/notes/upload-audio', {
+        const uploadResponse = await fetch('/api/notes/upload-audio', {
           method: 'POST',
           body: formData,
         });

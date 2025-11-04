@@ -415,7 +415,7 @@ form label:first-of-type {
 /* Mobile Responsiveness */
 @media (max-width: 768px) {
   body {
-    padding: 10px;
+    padding: 0;
   }
   
   .auth-page-wrapper {
@@ -431,7 +431,7 @@ form label:first-of-type {
     position: relative;
     width: 100%;
     height: auto;
-    padding: 50px 30px;
+    padding: var(--space-6) var(--space-4);
     transform: none !important;
   }
   
@@ -441,47 +441,86 @@ form label:first-of-type {
   
   form {
     max-width: 100%;
+    gap: var(--space-4);
   }
   
   form h2 {
-    font-size: 2rem;
-    margin-bottom: 2rem;
+    font-size: var(--font-size-2xl);
+    margin-bottom: var(--space-4);
+  }
+  
+  .form-group {
+    margin-bottom: var(--space-3);
+  }
+  
+  .form-group label {
+    font-size: var(--font-size-sm);
+    margin-bottom: var(--space-1);
   }
   
   input {
-    padding: 18px 20px;
-    font-size: 16px;
+    padding: var(--space-3) var(--space-4);
+    font-size: var(--font-size-base);
   }
   
   button {
-    padding: 18px 30px;
-    font-size: 16px;
+    padding: var(--space-3) var(--space-4);
+    font-size: var(--font-size-base);
     width: 100%;
+    margin-top: var(--space-2);
+  }
+  
+  .auth-switch-text {
+    font-size: var(--font-size-sm);
+    margin-top: var(--space-3);
+  }
+  
+  .auth-switch-link {
+    font-size: var(--font-size-sm);
   }
   
   .auth-overlay-panel h2 {
-    font-size: 2rem;
+    font-size: var(--font-size-2xl);
   }
   
   .auth-overlay-panel p {
-    font-size: 1rem;
+    font-size: var(--font-size-base);
   }
 }
 
 @media (max-width: 480px) {
   .auth-form-panel {
-    padding: 30px 20px;
+    padding: var(--space-4) var(--space-3);
+  }
+  
+  form {
+    gap: var(--space-3);
   }
   
   form h2 {
-    font-size: 1.75rem;
+    font-size: var(--font-size-xl);
+    margin-bottom: var(--space-3);
+  }
+  
+  .form-group {
+    margin-bottom: var(--space-2);
   }
   
   input {
-    padding: 16px 18px;
+    padding: var(--space-2) var(--space-3);
+    font-size: var(--font-size-sm);
   }
   
   button {
-    padding: 16px 20px;
+    padding: var(--space-3);
+    font-size: var(--font-size-sm);
+  }
+  
+  .auth-switch-text {
+    font-size: 12px;
+  }
+  
+  .auth-switch-link {
+    font-size: 12px;
   }
 }

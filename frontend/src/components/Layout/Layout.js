@@ -2,11 +2,12 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import './Layout.css';
 import '../../styles/design-system.css';
-import { FaBars, FaTasks, FaBook, FaSmile, FaClipboardList, FaStickyNote, FaSignOutAlt, FaUserCircle, FaUser, FaCalendarAlt, FaHome, FaCheckSquare, FaFileAlt, FaJournalWhills, FaUserEdit, FaHeadset, FaPaperPlane } from 'react-icons/fa';
+import { FaBars, FaTimes, FaTasks, FaBook, FaSmile, FaClipboardList, FaStickyNote, FaSignOutAlt, FaUserCircle, FaUser, FaCalendarAlt, FaHome, FaCheckSquare, FaFileAlt, FaJournalWhills, FaUserEdit, FaHeadset, FaPaperPlane } from 'react-icons/fa';
 import QuickAudioRecorder from '../QuickAudioRecorder';
 
 const Layout = ({ children }) => {
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [userInfo, setUserInfo] = useState(null);
   const [userStats, setUserStats] = useState({
     totalNotes: 0,
@@ -20,6 +21,7 @@ const Layout = ({ children }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const contentRef = useRef(null);
+  const sidebarRef = useRef(null);
 
   useEffect(() => {
     fetchUserInfo();
@@ -35,7 +37,37 @@ const Layout = ({ children }) => {
     if (contentRef.current) {
       contentRef.current.scrollTo(0, 0);
     }
+    
+    // Close mobile menu when route changes
+    setIsMobileMenuOpen(false);
   }, [location.pathname]);
+
+  // Close mobile menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (
+        isMobileMenuOpen &&
+        sidebarRef.current &&
+        !sidebarRef.current.contains(event.target) &&
+        !event.target.closest('.mobile-menu-button')
+      ) {
+        setIsMobileMenuOpen(false);
+      }
+    };
+
+    if (isMobileMenuOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+      // Prevent body scroll when menu is open
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.body.style.overflow = '';
+    };
+  }, [isMobileMenuOpen]);
 
   const fetchUserInfo = () => {
     const storedUser = JSON.parse(localStorage.getItem('user'));
@@ -48,7 +80,7 @@ const Layout = ({ children }) => {
     try {
       const storedUser = JSON.parse(localStorage.getItem('user'));
       if (storedUser && storedUser.id) {
-        const response = await fetch(`http://localhost:5000/api/users/profile/${storedUser.id}/stats`);
+        const response = await fetch(`/api/users/profile/${storedUser.id}/stats`);
         if (response.ok) {
           const stats = await response.json();
           setUserStats(stats);
@@ -60,7 +92,21 @@ const Layout = ({ children }) => {
   };
 
   const toggleSidebar = () => {
-    setIsCollapsed(!isCollapsed);
+    // On mobile, toggle the mobile menu instead of collapsing
+    const isMobile = window.innerWidth <= 768;
+    if (isMobile) {
+      setIsMobileMenuOpen(!isMobileMenuOpen);
+    } else {
+      setIsCollapsed(!isCollapsed);
+    }
+  };
+
+  const toggleMobileMenu = () => {
+    setIsMobileMenuOpen(!isMobileMenuOpen);
+  };
+
+  const handleNavLinkClick = () => {
+    setIsMobileMenuOpen(false);
   };
 
   const handleLogout = () => {
@@ -82,7 +128,7 @@ const Layout = ({ children }) => {
   // Handle quick audio recording save
   const handleQuickAudioSave = async (noteData, audioData) => {
     try {
-      const response = await fetch('http://localhost:5000/api/notes', {
+      const response = await fetch('/api/notes', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -143,13 +189,28 @@ const Layout = ({ children }) => {
     setShowSupportSuccess(false);
   };
 
+  // On mobile, always show text when menu is open, regardless of collapsed state
+  const showText = !isCollapsed || isMobileMenuOpen;
+
   return (
     <div className="layout">
+      {/* Mobile Menu Overlay */}
+      {isMobileMenuOpen && (
+        <div 
+          className="mobile-menu-overlay" 
+          onClick={toggleMobileMenu}
+          aria-hidden="true"
+        />
+      )}
+      
       {/* Sidebar */}
-      <aside className={`sidebar ${isCollapsed ? 'collapsed' : ''}`}>
+      <aside 
+        ref={sidebarRef}
+        className={`sidebar ${isCollapsed ? 'collapsed' : ''} ${isMobileMenuOpen ? 'mobile-open' : ''}`}
+      >
         {/* Sidebar Header */}
         <div className="sidebar-header">
-          {/* User Avatar */}
+          {/* User Avatar and Name - Compact Design */}
           <div className="sidebar-avatar">
             {userInfo && userInfo.avatar ? (
               <img src={userInfo.avatar} alt="Profile" className="avatar-image" />
@@ -158,7 +219,7 @@ const Layout = ({ children }) => {
                 <FaUser className="avatar-icon" />
               </div>
             )}
-            {!isCollapsed && (
+            {showText && (
               <div className="avatar-info">
                 <span className="avatar-name">{userInfo?.username || 'User'}</span>
                 <span className="avatar-status">Online</span>
@@ -166,68 +227,80 @@ const Layout = ({ children }) => {
             )}
           </div>
           
-          {/* Toggle Button */}
-          <button className="toggle-button" onClick={toggleSidebar}>
-            ☰
+          {/* Toggle Button - Top Right of Sidebar */}
+          <button 
+            className="toggle-button sidebar-close-button" 
+            onClick={toggleSidebar}
+            aria-label={isMobileMenuOpen ? "Close menu" : "Toggle sidebar"}
+          >
+            {isMobileMenuOpen ? <FaTimes className="toggle-icon" /> : <FaBars className="toggle-icon" />}
           </button>
         </div>
 
         {/* Navigation Menu */}
         <nav className="sidebar-nav">
-          <h2 className="menu-title">{!isCollapsed && 'Navigation'}</h2>
+          <h2 className="menu-title">{showText && 'Navigation'}</h2>
           <ul className="nav-list">
             <li>
               <Link 
                 to="/dashboard" 
                 className={`nav-link ${isActive('/dashboard') ? 'active' : ''}`}
+                onClick={handleNavLinkClick}
               >
                 <FaHome className="nav-icon" />
-                {!isCollapsed && <span className="nav-text">Dashboard</span>}
+                {showText && <span className="nav-text">Dashboard</span>}
             </Link>
           </li>
           <li>
               <Link 
                 to="/todo" 
                 className={`nav-link ${isActive('/todo') ? 'active' : ''}`}
+                onClick={handleNavLinkClick}
               >
                 <FaCheckSquare className="nav-icon" />
-                {!isCollapsed && <span className="nav-text">To-Do List</span>}
+                {showText && <span className="nav-text">To-Do List</span>}
             </Link>
           </li>
           <li>
               <Link 
                 to="/notes" 
                 className={`nav-link ${isActive('/notes') ? 'active' : ''}`}
+                onClick={handleNavLinkClick}
               >
                 <FaStickyNote className="nav-icon" />
-                {!isCollapsed && <span className="nav-text">Notes</span>}
+                {showText && <span className="nav-text">Notes</span>}
             </Link>
           </li>
           <li>
               <Link 
                 to="/entries" 
                 className={`nav-link ${isActive('/entries') ? 'active' : ''}`}
+                onClick={handleNavLinkClick}
               >
                 <FaJournalWhills className="nav-icon" />
-                {!isCollapsed && <span className="nav-text">Diary Entries</span>}
+                {showText && <span className="nav-text">Diary Entries</span>}
             </Link>
           </li>
           <li>
               <Link 
                 to="/mood-tracker" 
                 className={`nav-link ${isActive('/mood-tracker') ? 'active' : ''}`}
+                onClick={handleNavLinkClick}
               >
                 <FaSmile className="nav-icon" />
-                {!isCollapsed && <span className="nav-text">Mood Tracker</span>}
+                {showText && <span className="nav-text">Mood Tracker</span>}
             </Link>
           </li>
           <li>
             <button 
               className="nav-link support-link"
-              onClick={handleOpenSupport}
+              onClick={() => {
+                handleOpenSupport();
+                handleNavLinkClick();
+              }}
             >
               <FaHeadset className="nav-icon" />
-              {!isCollapsed && <span className="nav-text">Support</span>}
+              {showText && <span className="nav-text">Support</span>}
             </button>
           </li>
         </ul>
@@ -238,20 +311,51 @@ const Layout = ({ children }) => {
           <Link 
             to="/profile" 
             className={`profile-link ${isActive('/profile') ? 'active' : ''}`}
+            onClick={handleNavLinkClick}
           >
             <FaUserEdit className="nav-icon" />
-            {!isCollapsed && <span className="nav-text">Profile</span>}
+            {showText && <span className="nav-text">Profile</span>}
           </Link>
         <button className="logout-button" onClick={handleLogout}>
             <FaSignOutAlt className="nav-icon" />
-            {!isCollapsed && <span className="nav-text">Log Out</span>}
+            {showText && <span className="nav-text">Log Out</span>}
         </button>
         </div>
       </aside>
 
       {/* Main Content */}
       <div className="main-content">
-        <header className="top-header">
+        {/* Mobile Header - Compact, Full Width */}
+        <header className="mobile-header">
+          <button 
+            className="mobile-header-menu-button"
+            onClick={toggleMobileMenu}
+            aria-label={isMobileMenuOpen ? "Close navigation menu" : "Open navigation menu"}
+            aria-expanded={isMobileMenuOpen}
+          >
+            {isMobileMenuOpen ? (
+              <FaTimes className="mobile-header-menu-icon" />
+            ) : (
+              <FaBars className="mobile-header-menu-icon" />
+            )}
+          </button>
+          <h1 className="mobile-header-title">Digital Diary</h1>
+          {userInfo && (
+            <div className="mobile-header-user">
+              <div className="mobile-header-avatar">
+                {userInfo.avatar ? (
+                  <img src={userInfo.avatar} alt="Profile" />
+                ) : (
+                  <FaUser className="mobile-header-avatar-icon" />
+                )}
+              </div>
+              <span className="mobile-header-username">{userInfo.username || 'User'}</span>
+            </div>
+          )}
+        </header>
+        
+        {/* Desktop Header */}
+        <header className="top-header desktop-header">
           <h1>Welcome to Digital Diary</h1>
           <div className="header-user-section">
             {userInfo && (

@@ -38,7 +38,7 @@ const Tasks = () => {
 
   const fetchTasks = async () => {
     try {
-      const response = await axios.get('http://localhost:5000/api/tasks');
+      const response = await axios.get('/api/tasks');
       setTasks(response.data);
       setFilteredTasks(response.data);
     } catch (error) {
@@ -53,7 +53,7 @@ const Tasks = () => {
     }
 
     try {
-      await axios.post('http://localhost:5000/api/tasks', newTask);
+      await axios.post('/api/tasks', newTask);
       fetchTasks();
       setNewTask({ title: '', description: '', deadline: '' });
       setShowAddModal(false); // Close the modal after adding the task
@@ -64,7 +64,7 @@ const Tasks = () => {
 
   const handleDeleteTask = async (taskId) => {
     try {
-      await axios.delete(`http://localhost:5000/api/tasks/${taskId}`);
+      await axios.delete(`/api/tasks/${taskId}`);
       fetchTasks();
     } catch (error) {
       console.error('Error deleting task:', error);
@@ -78,7 +78,7 @@ const Tasks = () => {
 
   const handleSaveEdit = async (taskId) => {
     try {
-      await axios.put(`http://localhost:5000/api/tasks/${taskId}`, editedTask);
+      await axios.put(`/api/tasks/${taskId}`, editedTask);
       fetchTasks();
       setEditingTaskId(null);
       setSelectedTask(null); // Close the modal and return to task list

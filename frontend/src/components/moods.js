@@ -28,7 +28,7 @@ const MoodTracker = () => {
 
   const fetchMoodHistory = async () => {
     try {
-      const response = await axios.get('http://localhost:5000/api/moods');
+      const response = await axios.get('/api/moods');
       setMoodHistory(response.data);
     } catch (error) {
       console.error('Error fetching mood history:', error);
@@ -42,7 +42,7 @@ const MoodTracker = () => {
     }
 
     try {
-      await axios.delete(`http://localhost:5000/api/moods/${moodId}`);
+      await axios.delete(`/api/moods/${moodId}`);
       // Remove the deleted mood from the local state
       setMoodHistory(moodHistory.filter(mood => mood.id !== moodId));
       alert('Mood entry deleted successfully!');
@@ -59,7 +59,7 @@ const MoodTracker = () => {
     }
 
     try {
-      const response = await axios.post('http://localhost:5000/api/moods', {
+      const response = await axios.post('/api/moods', {
         mood: selectedMood,
         date: new Date().toISOString(),
       });

@@ -196,41 +196,91 @@
 
 /* Responsive Design */
 @media (max-width: 768px) {
+  .modal-overlay {
+    padding: var(--space-2) !important;
+    align-items: flex-start !important;
+    padding-top: var(--space-4) !important;
+  }
+  
   .modal-content {
-    width: 95% !important;
-    padding: 24px !important;
-    margin: 20px !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    padding: var(--space-4) !important;
+    margin: 0 !important;
+    max-height: calc(100vh - var(--space-8)) !important;
+    border-radius: 16px 16px 0 0 !important;
+    overflow-y: auto !important;
+    box-sizing: border-box !important;
   }
   
   .modal-title {
-    font-size: 20px !important;
+    font-size: var(--font-size-xl) !important;
+    margin-bottom: var(--space-3) !important;
   }
   
   .modal-input,
   .modal-date {
-    padding: 14px 16px !important;
-    font-size: 15px !important;
+    padding: var(--space-3) var(--space-4) !important;
+    font-size: var(--font-size-base) !important;
+    margin-bottom: var(--space-3) !important;
+  }
+  
+  .modal-date-container {
+    margin-bottom: var(--space-3) !important;
   }
   
   .modal-buttons {
     flex-direction: column !important;
-    gap: 12px !important;
+    gap: var(--space-2) !important;
+    margin-top: var(--space-3) !important;
   }
   
   .modal-button {
     width: 100% !important;
-    padding: 16px !important;
+    padding: var(--space-3) !important;
+    font-size: var(--font-size-base) !important;
+    min-width: auto !important;
   }
 }
 
 @media (max-width: 480px) {
+  .modal-overlay {
+    padding: var(--space-1) !important;
+    padding-top: var(--space-3) !important;
+  }
+  
   .modal-content {
-    width: 98% !important;
-    padding: 20px !important;
-    margin: 10px !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    padding: var(--space-3) !important;
+    margin: 0 !important;
+    max-height: calc(100vh - var(--space-6)) !important;
+    border-radius: 12px 12px 0 0 !important;
   }
   
   .modal-title {
-    font-size: 18px !important;
+    font-size: var(--font-size-lg) !important;
+    margin-bottom: var(--space-2) !important;
+  }
+  
+  .modal-input,
+  .modal-date {
+    padding: var(--space-2) var(--space-3) !important;
+    font-size: var(--font-size-sm) !important;
+    margin-bottom: var(--space-2) !important;
+  }
+  
+  .modal-date-container {
+    margin-bottom: var(--space-2) !important;
+  }
+  
+  .modal-buttons {
+    gap: var(--space-2) !important;
+    margin-top: var(--space-2) !important;
+  }
+  
+  .modal-button {
+    padding: var(--space-2) !important;
+    font-size: var(--font-size-sm) !important;
   }
 }

@@ -36,6 +36,19 @@
   cursor: pointer;
   transition: all var(--transition-fast);
   font-size: var(--font-size-sm);
+  position: relative;
+  overflow: visible;
+}
+
+.toolbar-btn svg {
+  width: 16px !important;
+  height: 16px !important;
+  color: inherit !important;
+  fill: currentColor !important;
+  display: block !important;
+  flex-shrink: 0 !important;
+  opacity: 1 !important;
+  visibility: visible !important;
 }
 
 .toolbar-btn:hover:not(:disabled) {
@@ -94,24 +107,134 @@
 
 /* Responsive Design */
 @media (max-width: 768px) {
+  .rich-text-editor {
+    max-width: 100%;
+    overflow: hidden;
+  }
+  
   .editor-toolbar {
     padding: var(--space-2);
     gap: var(--space-1);
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
   }
   
   .toolbar-btn {
     width: 28px;
     height: 28px;
-    font-size: var(--font-size-xs);
+    font-size: 12px;
+    flex-shrink: 0;
+    overflow: visible;
+  }
+  
+  .toolbar-btn svg {
+    width: 14px !important;
+    height: 14px !important;
+    color: var(--gray-600) !important;
+    fill: currentColor !important;
+    display: block !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+  }
+  
+  .toolbar-btn:hover:not(:disabled) svg {
+    color: var(--gray-800) !important;
+  }
+  
+  .toolbar-btn:disabled svg {
+    opacity: 0.4 !important;
   }
   
   .editor-textarea {
     padding: var(--space-3);
     font-size: var(--font-size-sm);
+    min-height: 150px;
+    max-height: 300px;
+    overflow-y: auto;
   }
   
   .editor-help {
     padding: var(--space-2) var(--space-3);
+    font-size: var(--font-size-xs);
+  }
+  
+  /* Rich Text Editor in Modal - Mobile */
+  .modal-content .rich-text-editor {
+    max-width: 100%;
+    overflow: hidden;
+    box-sizing: border-box;
+  }
+  
+  .modal-content .editor-toolbar {
+    padding: var(--space-2);
+    gap: var(--space-1);
+    overflow: visible;
+  }
+  
+  .modal-content .toolbar-btn svg {
+    width: 14px !important;
+    height: 14px !important;
+    color: var(--gray-600) !important;
+    fill: currentColor !important;
+    display: block !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+  }
+  
+  .modal-content .editor-textarea {
+    padding: var(--space-2);
+    font-size: var(--font-size-sm);
+    min-height: 120px;
+    max-height: 250px;
+  }
+}
+
+@media (max-width: 480px) {
+  .rich-text-editor {
+    max-width: 100%;
+    overflow: hidden;
+  }
+  
+  .editor-toolbar {
+    padding: var(--space-1);
+    gap: 4px;
+  }
+  
+  .toolbar-btn {
+    width: 24px;
+    height: 24px;
+    font-size: 11px;
+    overflow: visible;
+  }
+  
+  .toolbar-btn svg {
+    width: 12px !important;
+    height: 12px !important;
+    color: var(--gray-600) !important;
+    fill: currentColor !important;
+    display: block !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+  }
+  
+  .toolbar-btn:hover:not(:disabled) svg {
+    color: var(--gray-800) !important;
+  }
+  
+  .toolbar-btn:disabled svg {
+    opacity: 0.4 !important;
+  }
+  
+  .editor-textarea {
+    padding: var(--space-2);
+    font-size: var(--font-size-sm);
+    min-height: 100px;
+    max-height: 200px;
+  }
+  
+  .modal-content .editor-textarea {
+    min-height: 100px;
+    max-height: 180px;
   }
 }
 

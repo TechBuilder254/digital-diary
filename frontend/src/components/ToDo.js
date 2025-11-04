@@ -41,7 +41,7 @@ function TodoList() {
 
   const fetchTodolists = async () => {
     try {
-      const response = await axios.get('http://localhost:5000/api/todo');
+      const response = await axios.get('/api/todo');
       setTodolists(response.data);
     } catch (error) {
       console.error('Error fetching to-do items:', error.response?.data || error.message);
@@ -98,7 +98,7 @@ function TodoList() {
     }
 
     try {
-      const response = await axios.post('http://localhost:5000/api/todo', {
+      const response = await axios.post('/api/todo', {
         text: newTodolistText,
         completed: false,
         expiry_date: newTodolistExpiry || null,
@@ -125,7 +125,7 @@ function TodoList() {
 
   const handleToggleComplete = async (id, completed) => {
     try {
-      await axios.put(`http://localhost:5000/api/todo/${id}`, { completed: !completed });
+      await axios.put(`/api/todo/${id}`, { completed: !completed });
       setTodolists((prevTodolists) =>
         prevTodolists.map((todolist) =>
           todolist.id === id ? { ...todolist, completed: !completed } : todolist
@@ -164,7 +164,7 @@ function TodoList() {
     }
 
     try {
-      await axios.put(`http://localhost:5000/api/todo/${editingTodolistId}`, { 
+      await axios.put(`/api/todo/${editingTodolistId}`, { 
         text: editingText,
         expiry_date: editingExpiry || null
       });
@@ -199,7 +199,7 @@ function TodoList() {
   const handleDeleteTodolist = async (id) => {
     try {
       // Soft delete - move to trash
-      await axios.put(`http://localhost:5000/api/todo/${id}`, { 
+      await axios.put(`/api/todo/${id}`, { 
         is_deleted: true,
         deleted_at: new Date().toISOString()
       });
@@ -217,7 +217,7 @@ function TodoList() {
 
   const handleRestoreTodolist = async (id) => {
     try {
-      await axios.put(`http://localhost:5000/api/todo/${id}`, { 
+      await axios.put(`/api/todo/${id}`, { 
         is_deleted: false,
         deleted_at: null
       });
@@ -239,7 +239,7 @@ function TodoList() {
     }
     
     try {
-      await axios.delete(`http://localhost:5000/api/todo/${id}`);
+      await axios.delete(`/api/todo/${id}`);
       setTodolists((prevTodolists) => prevTodolists.filter((todolist) => todolist.id !== id));
       showSuccessMsg('Task permanently deleted! 🗑️');
     } catch (error) {

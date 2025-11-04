@@ -1124,63 +1124,180 @@
 /* Responsive Design */
 @media (max-width: 768px) {
   .notes-container {
-    padding: var(--space-4);
+    padding: var(--space-3);
   }
   
   .notes-header {
     flex-direction: column;
-    gap: var(--space-4);
-    text-align: center;
+    gap: var(--space-3);
+    padding: var(--space-3);
+    margin-bottom: var(--space-4);
+  }
+  
+  .header-content {
+    width: 100%;
+  }
+  
+  .page-title {
+    font-size: var(--font-size-xl);
+    margin: 0 0 var(--space-1) 0;
+  }
+  
+  .title-icon {
+    font-size: var(--font-size-xl);
+  }
+  
+  .page-subtitle {
+    font-size: var(--font-size-sm);
+    margin: 0;
   }
   
   .header-controls {
-    flex-direction: column;
-    gap: var(--space-4);
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    gap: var(--space-2);
+  }
+  
+  .view-toggle {
+    padding: 3px;
+    border-radius: 12px;
+  }
+  
+  .toggle-btn {
+    width: 32px;
+    height: 32px;
+    font-size: 14px;
+    border-radius: 8px;
+  }
+  
+  .filter-toggle-btn {
+    min-width: auto;
+    height: 32px;
+    padding: 0 var(--space-2);
+    gap: 4px;
+    font-size: 12px;
+  }
+  
+  .filter-icon {
+    font-size: 14px;
+  }
+  
+  .filter-label {
+    font-size: 12px;
+  }
+  
+  .header-stats {
+    display: none; /* Hide stats card on mobile to save space */
+  }
+  
+  .search-section {
+    margin-bottom: var(--space-4);
+  }
+  
+  .search-container {
+    max-width: 100%;
+  }
+  
+  .search-input {
+    padding: var(--space-3) var(--space-3) var(--space-3) var(--space-10);
+    font-size: var(--font-size-sm);
+  }
+  
+  .search-icon {
+    left: var(--space-3);
+    font-size: var(--font-size-base);
+  }
+  
+  .filters-section {
+    margin-bottom: var(--space-4);
   }
   
   .filters-container {
     flex-direction: column;
     align-items: stretch;
-  }
-  
-  .filter-group {
-    justify-content: space-between;
-  }
-  
-  .modal-row {
-    flex-direction: column;
+    padding: var(--space-3);
     gap: var(--space-3);
   }
   
-  .page-title {
-    font-size: var(--font-size-3xl);
+  .filter-group {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--space-2);
+    width: 100%;
+  }
+  
+  .filter-group label {
+    font-size: 12px;
+  }
+  
+  .filter-select {
+    width: 100%;
+    padding: var(--space-2) var(--space-3);
+    font-size: 13px;
+    min-width: auto;
+  }
+  
+  .favorites-filter {
+    font-size: 13px;
+  }
+  
+  .clear-filters-btn {
+    padding: var(--space-2) var(--space-3);
+    font-size: 13px;
+    width: 100%;
+    justify-content: center;
   }
   
   .grid-view {
     grid-template-columns: 1fr;
     gap: var(--space-3);
+    margin-bottom: var(--space-16);
   }
   
   .grid-card {
-    min-height: 180px;
+    min-height: 160px;
     padding: var(--space-3);
+  }
+  
+  .grid-card .note-title {
+    font-size: var(--font-size-lg);
+  }
+  
+  .grid-card .note-text {
+    font-size: 13px;
+    -webkit-line-clamp: 2;
+  }
+  
+  .list-view {
+    gap: var(--space-3);
+    margin-bottom: var(--space-16);
   }
   
   .list-view .list-card {
     flex-direction: column;
     align-items: flex-start;
     min-height: auto;
-    gap: var(--space-3);
+    gap: var(--space-2);
+    padding: var(--space-3);
   }
   
   .list-card .note-header {
     min-width: auto;
     width: 100%;
+    margin-bottom: var(--space-2);
+  }
+  
+  .list-card .note-header .note-title {
+    font-size: var(--font-size-lg);
   }
   
   .list-card .note-header .note-actions {
     opacity: 1;
     margin-top: var(--space-2);
+    gap: var(--space-1);
   }
   
   .list-card .note-content {
@@ -1188,11 +1305,17 @@
     margin-top: 0;
     min-width: auto;
     width: 100%;
+    margin-bottom: var(--space-2);
+  }
+  
+  .list-card .note-content .note-text {
+    font-size: 13px;
+    -webkit-line-clamp: 2;
   }
   
   .list-card .note-footer {
     margin-left: 0;
-    margin-top: var(--space-2);
+    margin-top: var(--space-1);
     min-width: auto;
     width: 100%;
     flex-direction: row;
@@ -1204,25 +1327,166 @@
     position: relative;
     top: 0;
     left: 0;
-    margin-right: var(--space-3);
+    margin-right: var(--space-2);
+    width: 32px;
+    height: 32px;
+    font-size: 13px;
   }
   
   .note-card {
-    padding: var(--space-4);
+    padding: var(--space-3);
+  }
+  
+  .note-title {
+    font-size: var(--font-size-lg);
+  }
+  
+  .note-text {
+    font-size: 13px;
+  }
+  
+  .action-btn {
+    min-width: 50px;
+    height: 28px;
+    font-size: 11px;
+    padding: 0 var(--space-2);
+  }
+  
+  .note-badges {
+    margin-bottom: var(--space-2);
+  }
+  
+  .category-badge,
+  .priority-badge {
+    padding: 3px 6px;
+    font-size: 10px;
+  }
+  
+  .tag-item {
+    padding: 2px 5px;
+    font-size: 10px;
   }
   
   .floating-add-note-button {
-    width: 64px;
-    height: 64px;
-    font-size: 20px;
+    width: 56px;
+    height: 56px;
+    font-size: 18px;
   }
   
   .modal-content {
     width: 95%;
-    padding: var(--space-6);
+    padding: var(--space-4);
+    max-height: 90vh;
+    overflow-y: auto;
+  }
+  
+  .modal-content h2 {
+    font-size: var(--font-size-xl);
+    margin-bottom: var(--space-4);
+  }
+  
+  .modal-content input,
+  .modal-content textarea {
+    padding: var(--space-3);
+    font-size: var(--font-size-sm);
+  }
+  
+  .modal-content textarea {
+    min-height: 100px;
+  }
+  
+  .modal-field label {
+    font-size: 13px;
+  }
+  
+  .modal-select {
+    padding: var(--space-2);
+    font-size: 13px;
   }
   
   .modal-buttons {
     flex-direction: column;
+    gap: var(--space-2);
+  }
+  
+  .modal-buttons button {
+    padding: var(--space-3) var(--space-4);
+    font-size: var(--font-size-sm);
+    width: 100%;
+  }
+  
+  .empty-state {
+    padding: var(--space-8) var(--space-4);
+  }
+  
+  .empty-icon {
+    font-size: 48px;
+    margin-bottom: var(--space-3);
+  }
+  
+  .empty-title {
+    font-size: var(--font-size-xl);
+  }
+  
+  .empty-description {
+    font-size: var(--font-size-base);
+  }
+}
+
+@media (max-width: 480px) {
+  .notes-container {
+    padding: var(--space-2);
+  }
+  
+  .notes-header {
+    padding: var(--space-2);
+    gap: var(--space-2);
+    margin-bottom: var(--space-3);
+  }
+  
+  .page-title {
+    font-size: var(--font-size-lg);
+  }
+  
+  .page-subtitle {
+    font-size: 11px;
+  }
+  
+  .header-controls {
+    gap: var(--space-1);
+  }
+  
+  .toggle-btn {
+    width: 28px;
+    height: 28px;
+    font-size: 12px;
+  }
+  
+  .filter-toggle-btn {
+    height: 28px;
+    padding: 0 var(--space-2);
+    font-size: 11px;
+  }
+  
+  .filter-icon {
+    font-size: 12px;
+  }
+  
+  .filter-label {
+    font-size: 11px;
+  }
+  
+  .search-input {
+    padding: var(--space-2) var(--space-2) var(--space-2) var(--space-9);
+    font-size: 13px;
+  }
+  
+  .grid-card,
+  .list-view .list-card {
+    padding: var(--space-2);
+  }
+  
+  .grid-card {
+    min-height: 140px;
   }
 }

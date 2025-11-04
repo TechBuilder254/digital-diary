@@ -86,7 +86,7 @@ const Notes = () => {
     let audio = audioRefs[noteId];
     if (!audio) {
       // Create audio URL from server
-      const audioUrl = `http://localhost:5000/api/notes/audio/${note.audio_filename}`;
+      const audioUrl = `/api/notes/audio/${note.audio_filename}`;
       
       try {
         audio = new Audio(audioUrl);
@@ -128,7 +128,7 @@ const Notes = () => {
   useEffect(() => {
     const fetchNotes = async () => {
       try {
-        const response = await fetch('http://localhost:5000/api/notes');
+        const response = await fetch('/api/notes');
         const data = await response.json();
         setNotes(data);
         setFilteredNotes(data);
@@ -161,7 +161,7 @@ const Notes = () => {
       // Refresh notes list when a note is saved from Layout
       const fetchNotes = async () => {
         try {
-          const response = await fetch('http://localhost:5000/api/notes');
+          const response = await fetch('/api/notes');
           const data = await response.json();
           setNotes(data);
           setFilteredNotes(data);
@@ -186,7 +186,7 @@ const Notes = () => {
     }
   
     try {
-      const response = await fetch('http://localhost:5000/api/notes', {
+      const response = await fetch('/api/notes', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -225,7 +225,7 @@ const Notes = () => {
   };
   const handleToggleFavorite = async (id, currentFavoriteStatus) => {
     try {
-      const response = await fetch(`http://localhost:5000/api/notes/${id}/favorite`, {
+      const response = await fetch(`/api/notes/${id}/favorite`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
@@ -255,7 +255,7 @@ const Notes = () => {
 
   const handleDeleteNote = async (id) => {
     try {
-      const response = await fetch(`http://localhost:5000/api/notes/${id}`, {
+      const response = await fetch(`/api/notes/${id}`, {
         method: 'DELETE',
       });
 
@@ -272,7 +272,7 @@ const Notes = () => {
 
   const handleSaveEdit = async () => {
     try {
-      const response = await fetch(`http://localhost:5000/api/notes/${editingNote.id}`, {
+      const response = await fetch(`/api/notes/${editingNote.id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -433,10 +433,10 @@ const Notes = () => {
             <span className="filter-icon">⚙</span>
             <span className="filter-label">Filters</span>
           </button>
-        <div className="header-stats">
-          <div className="stat-item">
-            <span className="stat-number">{filteredNotes.length}</span>
-            <span className="stat-label">Notes</span>
+          <div className="header-stats">
+            <div className="stat-item">
+              <span className="stat-number">{filteredNotes.length}</span>
+              <span className="stat-label">Notes</span>
             </div>
           </div>
         </div>

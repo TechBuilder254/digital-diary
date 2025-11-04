@@ -49,7 +49,7 @@ const Profile = () => {
     try {
       const storedUser = JSON.parse(localStorage.getItem('user'));
       if (storedUser && storedUser.id) {
-        const response = await fetch(`http://localhost:5000/api/users/profile/${storedUser.id}`);
+        const response = await fetch(`/api/users/profile/${storedUser.id}`);
         if (response.ok) {
           const userData = await response.json();
           setUserInfo(userData);
@@ -71,7 +71,7 @@ const Profile = () => {
     try {
       const storedUser = JSON.parse(localStorage.getItem('user'));
       if (storedUser && storedUser.id) {
-        const response = await fetch(`http://localhost:5000/api/users/profile/${storedUser.id}/stats`);
+        const response = await fetch(`/api/users/profile/${storedUser.id}/stats`);
         if (response.ok) {
           const stats = await response.json();
           setUserStats(stats);
@@ -89,7 +89,7 @@ const Profile = () => {
   const handleSaveProfile = async () => {
     try {
     const storedUser = JSON.parse(localStorage.getItem('user'));
-      const response = await fetch(`http://localhost:5000/api/users/profile/${storedUser.id}`, {
+      const response = await fetch(`/api/users/profile/${storedUser.id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -137,7 +137,7 @@ const Profile = () => {
 
     try {
       const storedUser = JSON.parse(localStorage.getItem('user'));
-      const response = await fetch(`http://localhost:5000/api/users/profile/${storedUser.id}/password`, {
+      const response = await fetch(`/api/users/profile/${storedUser.id}/password`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
