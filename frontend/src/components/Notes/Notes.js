@@ -33,7 +33,6 @@ const Notes = () => {
   });
   const [editingNote, setEditingNote] = useState(null);
   const [expandedNotes, setExpandedNotes] = useState(new Set());
-  const [currentAudioData, setCurrentAudioData] = useState(null);
   const [playingAudioId, setPlayingAudioId] = useState(null);
   const [audioRefs, setAudioRefs] = useState({});
   
@@ -218,7 +217,6 @@ const Notes = () => {
         audio_size: null,
         has_audio: false,
       });
-      setCurrentAudioData(null);
     } catch (error) {
       console.error('Error adding note:', error);
     }
@@ -313,7 +311,6 @@ const Notes = () => {
         audio_size: null,
         has_audio: false,
       });
-      setCurrentAudioData(null);
     } catch (error) {
       console.error('Error updating note:', error);
     }
@@ -379,9 +376,6 @@ const Notes = () => {
   const handleEditNote = (note) => {
     setEditingNote(note);
     setShowAddModal(true);
-    
-    // Audio files are now stored on the server
-    setCurrentAudioData(null);
     
     setNewNote({
       title: note.title,
@@ -753,7 +747,6 @@ const Notes = () => {
           setShowAddModal(true);
           setEditingNote(null);
           setNewNote({ title: '', content: '', category: '', tags: '', priority: 'Medium', is_favorite: false, audio_filename: null, audio_duration: null, audio_size: null, has_audio: false });
-          setCurrentAudioData(null);
         }}
         variant="notes"
         icon="+"

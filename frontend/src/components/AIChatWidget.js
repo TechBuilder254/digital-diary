@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { FaRobot, FaTimes, FaPaperPlane, FaQuestionCircle, FaBook, FaTasks, FaSmile, FaStickyNote } from 'react-icons/fa';
+import { FaRobot } from 'react-icons/fa';
 import './AIChatWidget.css';
 
 const AIChatWidget = () => {

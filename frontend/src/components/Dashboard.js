@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { FaTasks, FaStickyNote, FaBook, FaSmile, FaClipboardList, FaChartLine, FaCalendarAlt, FaBell, FaRobot, FaTimes } from 'react-icons/fa';
+import { FaTasks, FaStickyNote, FaBook, FaSmile, FaClipboardList, FaChartLine, FaRobot, FaTimes } from 'react-icons/fa';
 import './Dashboard.css';
 import '../styles/design-system.css';
 import AIAssistant from './AIAssistant';
@@ -35,6 +35,7 @@ const Dashboard = () => {
 
     // Fetch dashboard statistics
     fetchDashboardStats();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Close modal with ESC key

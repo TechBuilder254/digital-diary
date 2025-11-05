@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { FaSmile, FaFrown, FaAngry, FaMeh, FaHeart, FaCalendarAlt, FaChartLine, FaFire, FaRegSmile, FaRegFrown, FaTrash } from 'react-icons/fa';
+import { FaSmile, FaHeart, FaCalendarAlt, FaChartLine, FaFire, FaTrash } from 'react-icons/fa';
 import './the.css';
 import '../styles/design-system.css';
 

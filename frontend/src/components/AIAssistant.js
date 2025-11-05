@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { FaRobot, FaLightbulb, FaHeart, FaChartLine, FaQuoteLeft, FaQuoteRight } from 'react-icons/fa';
+import { FaRobot, FaLightbulb, FaHeart, FaChartLine } from 'react-icons/fa';
 import './AIAssistant.css';
 
 const AIAssistant = ({ userStats, recentMoods, recentTodos }) => {
@@ -13,7 +13,6 @@ const AIAssistant = ({ userStats, recentMoods, recentTodos }) => {
     // Mood-based insights
     if (recentMoods && recentMoods.length > 0) {
       const avgMood = recentMoods.reduce((sum, mood) => sum + mood.rating, 0) / recentMoods.length;
-      const latestMood = recentMoods[recentMoods.length - 1];
       
       if (avgMood >= 4) {
         insights.push({

@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { FaListOl, FaListUl, FaBold, FaItalic, FaUndo, FaRedo } from 'react-icons/fa';
+import { FaListOl, FaListUl, FaUndo, FaRedo } from 'react-icons/fa';
 import './RichTextEditor.css';
 
 const RichTextEditor = ({ value, onChange, placeholder = "Write your thoughts here...", rows = 8 }) => {
@@ -34,7 +34,6 @@ const RichTextEditor = ({ value, onChange, placeholder = "Write your thoughts he
     const textAfterCursor = content.substring(cursorPos);
     const lines = textBeforeCursor.split('\n');
     const currentLine = lines[lines.length - 1];
-    const previousLine = lines.length > 1 ? lines[lines.length - 2] : '';
 
     // Handle Enter key for auto-numbering and bullet points
     if (e.key === 'Enter') {
@@ -44,7 +43,6 @@ const RichTextEditor = ({ value, onChange, placeholder = "Write your thoughts he
       const numberedMatch = currentLine.match(/^(\d+)\.\s*(.*)/);
       if (numberedMatch) {
         const currentNumber = parseInt(numberedMatch[1]);
-        const content = numberedMatch[2];
         const newNumber = currentNumber + 1;
         const newLine = `${newNumber}. `;
         const newContent = textBeforeCursor + '\n' + newLine + textAfterCursor;
@@ -89,19 +87,6 @@ const RichTextEditor = ({ value, onChange, placeholder = "Write your thoughts he
         textarea.setSelectionRange(newCursorPos, newCursorPos);
       }, 0);
     }
-  };
-
-  const insertAtCursor = (text) => {
-    const textarea = textareaRef.current;
-    const cursorPos = textarea.selectionStart;
-    const newContent = content.substring(0, cursorPos) + text + content.substring(cursorPos);
-    handleContentChange(newContent);
-    
-    setTimeout(() => {
-      const newCursorPos = cursorPos + text.length;
-      textarea.setSelectionRange(newCursorPos, newCursorPos);
-      textarea.focus();
-    }, 0);
   };
 
   const insertNumberedList = () => {

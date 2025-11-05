@@ -2,19 +2,13 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import './Layout.css';
 import '../../styles/design-system.css';
-import { FaBars, FaTimes, FaTasks, FaBook, FaSmile, FaClipboardList, FaStickyNote, FaSignOutAlt, FaUserCircle, FaUser, FaCalendarAlt, FaHome, FaCheckSquare, FaFileAlt, FaJournalWhills, FaUserEdit, FaHeadset, FaPaperPlane } from 'react-icons/fa';
+import { FaBars, FaTimes, FaStickyNote, FaSignOutAlt, FaUser, FaHome, FaCheckSquare, FaJournalWhills, FaUserEdit, FaHeadset, FaPaperPlane, FaSmile } from 'react-icons/fa';
 import QuickAudioRecorder from '../QuickAudioRecorder';
 
 const Layout = ({ children }) => {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [userInfo, setUserInfo] = useState(null);
-  const [userStats, setUserStats] = useState({
-    totalNotes: 0,
-    totalTodos: 0,
-    completedTodos: 0,
-    favoriteNotes: 0
-  });
   const [showSupportModal, setShowSupportModal] = useState(false);
   const [showSupportSuccess, setShowSupportSuccess] = useState(false);
   const [supportMessage, setSupportMessage] = useState('');
@@ -27,6 +21,20 @@ const Layout = ({ children }) => {
     fetchUserInfo();
     fetchUserStats();
   }, []);
+
+  const fetchUserStats = async () => {
+    try {
+      const storedUser = JSON.parse(localStorage.getItem('user'));
+      if (storedUser && storedUser.id) {
+        const response = await fetch(`/api/users/profile/${storedUser.id}/stats`);
+        if (response.ok) {
+          await response.json();
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching user stats:', error);
+    }
+  };
 
   // Scroll to top when route changes
   useEffect(() => {
@@ -73,21 +81,6 @@ const Layout = ({ children }) => {
     const storedUser = JSON.parse(localStorage.getItem('user'));
     if (storedUser) {
       setUserInfo(storedUser);
-    }
-  };
-
-  const fetchUserStats = async () => {
-    try {
-      const storedUser = JSON.parse(localStorage.getItem('user'));
-      if (storedUser && storedUser.id) {
-        const response = await fetch(`/api/users/profile/${storedUser.id}/stats`);
-        if (response.ok) {
-          const stats = await response.json();
-          setUserStats(stats);
-        }
-      }
-    } catch (error) {
-      console.error('Error fetching user stats:', error);
     }
   };
 

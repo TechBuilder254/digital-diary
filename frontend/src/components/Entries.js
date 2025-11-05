@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { FaBook, FaPlus, FaSearch, FaEdit, FaTrashAlt, FaCalendarAlt, FaEye, FaTimes } from 'react-icons/fa';
+import { FaBook, FaPlus, FaSearch, FaEdit, FaTrashAlt, FaCalendarAlt, FaTimes } from 'react-icons/fa';
 import './the.css';
 import '../styles/design-system.css';
 import FloatingActionButton from './FloatingActionButton';
@@ -22,14 +22,6 @@ const Entries = () => {
   const [showAddModal, setShowAddModal] = useState(false);
   const [selectedEntry, setSelectedEntry] = useState(null);
 
-  // Helper function to safely format dates
-  const formatDate = (dateString) => {
-    if (!dateString) return 'Date not available';
-    const date = new Date(dateString);
-    if (isNaN(date.getTime())) return 'Date not available';
-    return date.toLocaleDateString();
-  };
-
   // Helper function to format content with lists
   const formatContent = (content) => {
     if (!content) return '';
@@ -39,7 +31,6 @@ const Entries = () => {
     const formattedLines = [];
     let inNumberedList = false;
     let inBulletList = false;
-    let listCounter = 1;
     
     lines.forEach((line, index) => {
       const trimmedLine = line.trim();
@@ -119,12 +110,6 @@ const Entries = () => {
     }
   };
 
-  // Define the handleChange function
-  const handleChange = (e, setState) => {
-    const { name, value } = e.target;
-    setState((prevState) => ({ ...prevState, [name]: value }));
-  };
-
   const handleAddEntry = async () => {
     if (!form.title.trim() || !form.content.trim()) {
       alert('Title and content are required!');
@@ -149,11 +134,6 @@ const Entries = () => {
       console.error('Error adding entry:', error.response ? error.response.data : error.message);
       alert('Failed to add entry. Please try again.');
     }
-  };
-
-  const startEditing = (entry) => {
-    setEditingId(entry.id);
-    setEditingForm({ title: entry.title, content: entry.content });
   };
 
   const saveEditing = async () => {
