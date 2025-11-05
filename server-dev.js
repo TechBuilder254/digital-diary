@@ -9,9 +9,7 @@ const url = require('url');
 const { Readable } = require('stream');
 
 // Import API handlers
-const registerHandler = require('./api/auth/register');
-const loginHandler = require('./api/auth/login');
-const forgotPasswordHandler = require('./api/auth/forgot-password');
+const authHandler = require('./api/auth/index');
 const entriesHandler = require('./api/entries/index');
 const todosHandler = require('./api/todos/index');
 const tasksHandler = require('./api/tasks/index');
@@ -31,9 +29,7 @@ const PORT = 5000;
 
 // Route mapping
 const routes = {
-  '/api/auth/register': registerHandler,
-  '/api/auth/login': loginHandler,
-  '/api/auth/forgot-password': forgotPasswordHandler,
+  '/api/auth': authHandler,
   '/api/entries': entriesHandler,
   '/api/todo': todosHandler,
   '/api/tasks': tasksHandler,
@@ -102,8 +98,12 @@ const server = http.createServer(async (req, res) => {
       let handler = null;
 
       // IMPORTANT: Check specific routes BEFORE general ones
-      // Check for audio upload route FIRST (before /api/notes matches)
-      if (pathname === '/api/notes/upload-audio') {
+      // Check for auth route FIRST
+      if (pathname === '/api/auth') {
+        handler = authHandler;
+      }
+      // Check for audio upload route (before /api/notes matches)
+      else if (pathname === '/api/notes/upload-audio') {
         handler = uploadAudioHandler;
       }
       // Check for audio file route (e.g., /api/notes/audio/filename.webm)
