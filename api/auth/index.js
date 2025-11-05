@@ -39,6 +39,8 @@ module.exports = async (req) => {
   // Check if Supabase is configured
   if (!supabase) {
     console.error('Supabase client not initialized - missing environment variables');
+    console.error('SUPABASE_URL:', supabaseUrl ? 'Set (length: ' + supabaseUrl.length + ')' : 'Missing');
+    console.error('SUPABASE_KEY:', supabaseKey ? 'Set (length: ' + supabaseKey.length + ')' : 'Missing');
     return createResponse({ 
       message: 'Server configuration error', 
       error: 'Database connection not configured' 
@@ -91,7 +93,7 @@ async function handleLogin(body) {
     console.log(`[Login] Starting login for user: ${username}`);
     const queryStart = Date.now();
     
-    // Add timeout to Supabase query
+    // Add timeout to Supabase query - use shorter timeout for faster failure
     const queryPromise = supabase
       .from('users')
       .select('id, username, email, password')
@@ -99,10 +101,18 @@ async function handleLogin(body) {
       .limit(1);
 
     const timeoutPromise = new Promise((_, reject) => 
-      setTimeout(() => reject(new Error('Database query timeout')), 10000)
+      setTimeout(() => reject(new Error('Database query timeout after 8 seconds')), 8000)
     );
 
-    const { data: users, error } = await Promise.race([queryPromise, timeoutPromise]);
+    let queryResult;
+    try {
+      queryResult = await Promise.race([queryPromise, timeoutPromise]);
+    } catch (timeoutError) {
+      console.error(`[Login] Query timed out after ${Date.now() - queryStart}ms:`, timeoutError.message);
+      return createResponse({ message: 'Request timeout - database connection issue', error: timeoutError.message }, 504);
+    }
+    
+    const { data: users, error } = queryResult;
     console.log(`[Login] Query completed in ${Date.now() - queryStart}ms`);
 
     if (error) {
@@ -117,12 +127,20 @@ async function handleLogin(body) {
     const user = users[0];
 
     // Add timeout to bcrypt comparison
+    const compareStart = Date.now();
     const comparePromise = bcrypt.compare(password, user.password);
     const compareTimeout = new Promise((_, reject) => 
       setTimeout(() => reject(new Error('Password comparison timeout')), 5000)
     );
 
-    const isMatch = await Promise.race([comparePromise, compareTimeout]);
+    let isMatch;
+    try {
+      isMatch = await Promise.race([comparePromise, compareTimeout]);
+      console.log(`[Login] Password comparison completed in ${Date.now() - compareStart}ms`);
+    } catch (compareError) {
+      console.error(`[Login] Password comparison timed out after ${Date.now() - compareStart}ms`);
+      return createResponse({ message: 'Request timeout - password verification issue', error: compareError.message }, 504);
+    }
 
     if (isMatch) {
       return createResponse({
