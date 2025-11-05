@@ -97,9 +97,13 @@ const server = http.createServer(async (req, res) => {
       // Find handler
       let handler = null;
 
+      // Debug logging
+      console.log(`[${req.method}] ${pathname}${parsedUrl.search || ''}`);
+
       // IMPORTANT: Check specific routes BEFORE general ones
       // Check for auth route FIRST
       if (pathname === '/api/auth') {
+        console.log('Found auth handler');
         handler = authHandler;
       }
       // Check for audio upload route (before /api/notes matches)
@@ -154,10 +158,14 @@ const server = http.createServer(async (req, res) => {
       }
 
       if (!handler) {
+        console.log(`No handler found for ${pathname}`);
+        console.log('Available routes:', Object.keys(routes));
         res.writeHead(404, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ error: 'Not found' }));
+        res.end(JSON.stringify({ error: 'Not found', pathname }));
         return;
       }
+
+      console.log(`Calling handler for ${pathname}`);
 
       // Call handler
       const response = await handler(request);

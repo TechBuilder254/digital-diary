@@ -63,21 +63,22 @@ async function handleLogin(body) {
   }
 
   try {
-    const { data: user, error } = await supabase
+    const { data: users, error } = await supabase
       .from('users')
       .select('*')
       .eq('username', username)
-      .limit(1)
-      .single();
+      .limit(1);
 
     if (error) {
       console.error('Supabase query error:', error);
       return createResponse({ message: 'Database error', error: error.message }, 500);
     }
 
-    if (!user) {
+    if (!users || users.length === 0) {
       return createResponse({ message: 'Invalid credentials' }, 401);
     }
+
+    const user = users[0];
 
     const isMatch = await bcrypt.compare(password, user.password);
     if (isMatch) {
