@@ -3,13 +3,31 @@ const bcrypt = require('bcrypt');
 
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY;
-const supabase = createClient(supabaseUrl, supabaseKey);
+
+// Validate environment variables
+if (!supabaseUrl || !supabaseKey) {
+  console.error('Missing Supabase environment variables:', {
+    hasUrl: !!supabaseUrl,
+    hasKey: !!supabaseKey
+  });
+}
+
+const supabase = supabaseUrl && supabaseKey ? createClient(supabaseUrl, supabaseKey) : null;
 
 const { handleCORS, createResponse, parseBody, getQueryParams } = require('../../lib/handler');
 
 module.exports = async (req) => {
   const corsResponse = handleCORS(req);
   if (corsResponse) return corsResponse;
+
+  // Check if Supabase is configured
+  if (!supabase) {
+    console.error('Supabase client not initialized - missing environment variables');
+    return createResponse({ 
+      message: 'Server configuration error', 
+      error: 'Database connection not configured' 
+    }, 500);
+  }
 
   if (req.method !== 'POST') {
     return createResponse({ message: 'Method not allowed' }, 405);
@@ -44,27 +62,37 @@ async function handleLogin(body) {
     return createResponse({ message: 'Both username and password are required' }, 400);
   }
 
-  const { data: user, error } = await supabase
-    .from('users')
-    .select('*')
-    .eq('username', username)
-    .limit(1)
-    .single();
+  try {
+    const { data: user, error } = await supabase
+      .from('users')
+      .select('*')
+      .eq('username', username)
+      .limit(1)
+      .single();
 
-  if (error || !user) {
-    return createResponse({ message: 'Invalid credentials' }, 401);
-  }
+    if (error) {
+      console.error('Supabase query error:', error);
+      return createResponse({ message: 'Database error', error: error.message }, 500);
+    }
 
-  const isMatch = await bcrypt.compare(password, user.password);
-  if (isMatch) {
-    return createResponse({
-      message: 'Login successful',
-      success: true,
-      token: 'jwt-token-' + user.id,
-      user: { id: user.id, username: user.username, email: user.email }
-    }, 200);
-  } else {
-    return createResponse({ message: 'Invalid credentials' }, 401);
+    if (!user) {
+      return createResponse({ message: 'Invalid credentials' }, 401);
+    }
+
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (isMatch) {
+      return createResponse({
+        message: 'Login successful',
+        success: true,
+        token: 'jwt-token-' + user.id,
+        user: { id: user.id, username: user.username, email: user.email }
+      }, 200);
+    } else {
+      return createResponse({ message: 'Invalid credentials' }, 401);
+    }
+  } catch (error) {
+    console.error('Login handler error:', error);
+    return createResponse({ message: 'Login failed', error: error.message }, 500);
   }
 }
 
@@ -75,38 +103,43 @@ async function handleRegister(body) {
     return createResponse({ message: 'All fields are required' }, 400);
   }
 
-  // Check if user exists
-  const { data: existingUsers, error: checkError } = await supabase
-    .from('users')
-    .select('id')
-    .or(`username.eq.${username},email.eq.${email}`)
-    .limit(1);
+  try {
+    // Check if user exists
+    const { data: existingUsers, error: checkError } = await supabase
+      .from('users')
+      .select('id')
+      .or(`username.eq.${username},email.eq.${email}`)
+      .limit(1);
 
-  if (checkError) {
-    console.error('Database check error:', checkError);
-    return createResponse({ message: 'Database error', error: checkError.message }, 500);
+    if (checkError) {
+      console.error('Database check error:', checkError);
+      return createResponse({ message: 'Database error', error: checkError.message }, 500);
+    }
+
+    if (existingUsers && existingUsers.length > 0) {
+      return createResponse({ message: 'Username or email already exists' }, 400);
+    }
+
+    // Hash password
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    // Insert user
+    const { data: newUser, error: insertError } = await supabase
+      .from('users')
+      .insert([{ username, email, password: hashedPassword }])
+      .select()
+      .single();
+
+    if (insertError) {
+      console.error('Insert error:', insertError);
+      return createResponse({ message: 'Registration failed', error: insertError.message }, 500);
+    }
+
+    return createResponse({ message: 'Registration successful!', success: true }, 200);
+  } catch (error) {
+    console.error('Register handler error:', error);
+    return createResponse({ message: 'Registration failed', error: error.message }, 500);
   }
-
-  if (existingUsers && existingUsers.length > 0) {
-    return createResponse({ message: 'Username or email already exists' }, 400);
-  }
-
-  // Hash password
-  const hashedPassword = await bcrypt.hash(password, 10);
-
-  // Insert user
-  const { data: newUser, error: insertError } = await supabase
-    .from('users')
-    .insert([{ username, email, password: hashedPassword }])
-    .select()
-    .single();
-
-  if (insertError) {
-    console.error('Insert error:', insertError);
-    return createResponse({ message: 'Registration failed', error: insertError.message }, 500);
-  }
-
-  return createResponse({ message: 'Registration successful!', success: true }, 200);
 }
 
 async function handleForgotPassword(body) {
