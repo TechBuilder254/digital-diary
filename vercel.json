@@ -8,7 +8,12 @@
       "dest": "/api/$1"
     },
     {
-      "handle": "filesystem"
+      "src": "/static/(.*)",
+      "dest": "/static/$1"
+    },
+    {
+      "src": "/(.*\\.(js|css|ico|png|jpg|jpeg|gif|svg|woff|woff2|ttf|eot|json|map))",
+      "dest": "/$1"
     },
     {
       "src": "/(.*)",
