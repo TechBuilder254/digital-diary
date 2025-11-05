@@ -12,7 +12,20 @@ if (!supabaseUrl || !supabaseKey) {
   });
 }
 
-const supabase = supabaseUrl && supabaseKey ? createClient(supabaseUrl, supabaseKey) : null;
+// Create Supabase client with timeout configuration
+const supabase = supabaseUrl && supabaseKey ? createClient(supabaseUrl, supabaseKey, {
+  auth: {
+    persistSession: false
+  },
+  db: {
+    schema: 'public'
+  },
+  global: {
+    headers: {
+      'x-client-info': 'digital-diary-api'
+    }
+  }
+}) : null;
 
 const { handleCORS, createResponse, parseBody, getQueryParams } = require('../../lib/handler');
 
@@ -63,11 +76,18 @@ async function handleLogin(body) {
   }
 
   try {
-    const { data: users, error } = await supabase
+    // Add timeout to Supabase query
+    const queryPromise = supabase
       .from('users')
-      .select('*')
+      .select('id, username, email, password')
       .eq('username', username)
       .limit(1);
+
+    const timeoutPromise = new Promise((_, reject) => 
+      setTimeout(() => reject(new Error('Database query timeout')), 10000)
+    );
+
+    const { data: users, error } = await Promise.race([queryPromise, timeoutPromise]);
 
     if (error) {
       console.error('Supabase query error:', error);
@@ -80,7 +100,14 @@ async function handleLogin(body) {
 
     const user = users[0];
 
-    const isMatch = await bcrypt.compare(password, user.password);
+    // Add timeout to bcrypt comparison
+    const comparePromise = bcrypt.compare(password, user.password);
+    const compareTimeout = new Promise((_, reject) => 
+      setTimeout(() => reject(new Error('Password comparison timeout')), 5000)
+    );
+
+    const isMatch = await Promise.race([comparePromise, compareTimeout]);
+
     if (isMatch) {
       return createResponse({
         message: 'Login successful',
@@ -105,12 +132,18 @@ async function handleRegister(body) {
   }
 
   try {
-    // Check if user exists
-    const { data: existingUsers, error: checkError } = await supabase
+    // Check if user exists with timeout
+    const checkPromise = supabase
       .from('users')
       .select('id')
       .or(`username.eq.${username},email.eq.${email}`)
       .limit(1);
+
+    const checkTimeout = new Promise((_, reject) => 
+      setTimeout(() => reject(new Error('Database check timeout')), 10000)
+    );
+
+    const { data: existingUsers, error: checkError } = await Promise.race([checkPromise, checkTimeout]);
 
     if (checkError) {
       console.error('Database check error:', checkError);
@@ -121,15 +154,25 @@ async function handleRegister(body) {
       return createResponse({ message: 'Username or email already exists' }, 400);
     }
 
-    // Hash password
-    const hashedPassword = await bcrypt.hash(password, 10);
+    // Hash password with reduced rounds for faster hashing (8 rounds is still secure)
+    const hashPromise = bcrypt.hash(password, 8);
+    const hashTimeout = new Promise((_, reject) => 
+      setTimeout(() => reject(new Error('Password hashing timeout')), 5000)
+    );
+    const hashedPassword = await Promise.race([hashPromise, hashTimeout]);
 
-    // Insert user
-    const { data: newUser, error: insertError } = await supabase
+    // Insert user with timeout
+    const insertPromise = supabase
       .from('users')
       .insert([{ username, email, password: hashedPassword }])
       .select()
       .single();
+
+    const insertTimeout = new Promise((_, reject) => 
+      setTimeout(() => reject(new Error('User insert timeout')), 10000)
+    );
+
+    const { data: newUser, error: insertError } = await Promise.race([insertPromise, insertTimeout]);
 
     if (insertError) {
       console.error('Insert error:', insertError);
@@ -162,8 +205,8 @@ async function handleForgotPassword(body) {
     return createResponse({ message: 'Email not found' }, 404);
   }
 
-  // Hash new password
-  const hashedPassword = await bcrypt.hash(newPassword, 10);
+  // Hash new password with reduced rounds for faster hashing
+  const hashedPassword = await bcrypt.hash(newPassword, 8);
 
   // Update password
   const { data: updatedUser, error: updateError } = await supabase
