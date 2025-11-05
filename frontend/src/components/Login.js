@@ -62,7 +62,8 @@ const Login = ({ onLogin }) => {
     console.log('Attempting login with:', { username: signInUsername });
 
     try {
-      const response = await axios.post('/api/auth/login', {
+      const response = await axios.post('/api/auth?action=login', {
+        action: 'login',
         username: signInUsername,
         password: signInPassword
       });
@@ -109,7 +110,8 @@ const Login = ({ onLogin }) => {
     }
 
     try {
-      const response = await axios.post('/api/auth/register', {
+      const response = await axios.post('/api/auth?action=register', {
+        action: 'register',
         username: signUpUsername,
         email: signUpEmail,
         password: signUpPassword
@@ -151,7 +153,8 @@ const Login = ({ onLogin }) => {
     }
 
     try {
-      const response = await axios.post('/api/auth/forgot-password', {
+      const response = await axios.post('/api/auth?action=forgot-password', {
+        action: 'forgot-password',
         email: resetEmail,
         newPassword: resetNewPassword
       });

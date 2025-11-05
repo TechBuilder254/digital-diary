@@ -11,9 +11,9 @@ export const API_CONFIG = {
   baseURL: API_BASE_URL,
   endpoints: {
     auth: {
-      login: `${API_BASE_URL}/auth/login`,
-      register: `${API_BASE_URL}/auth/register`,
-      forgotPassword: `${API_BASE_URL}/auth/forgot-password`,
+      login: `${API_BASE_URL}/auth?action=login`,
+      register: `${API_BASE_URL}/auth?action=register`,
+      forgotPassword: `${API_BASE_URL}/auth?action=forgot-password`,
     },
     users: {
       profile: (id) => `${API_BASE_URL}/users/profile/${id}`,
