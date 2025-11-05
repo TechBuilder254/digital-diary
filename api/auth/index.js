@@ -30,6 +30,9 @@ const supabase = supabaseUrl && supabaseKey ? createClient(supabaseUrl, supabase
 const { handleCORS, createResponse, parseBody, getQueryParams } = require('../../lib/handler');
 
 module.exports = async (req) => {
+  const startTime = Date.now();
+  console.log(`[${new Date().toISOString()}] Auth request started: ${req.method} ${req.url}`);
+  
   const corsResponse = handleCORS(req);
   if (corsResponse) return corsResponse;
 
@@ -47,23 +50,32 @@ module.exports = async (req) => {
   }
 
   try {
+    const parseStart = Date.now();
     const body = await parseBody(req);
     const queryParams = getQueryParams(req);
-    const action = queryParams.action || body.action || 'login'; // Default to login
+    const action = queryParams.action || body.action || 'login';
+    console.log(`[${Date.now() - parseStart}ms] Parsed request, action: ${action}`);
 
     // Route based on action
+    const handlerStart = Date.now();
+    let response;
     switch (action) {
       case 'login':
-        return await handleLogin(body);
+        response = await handleLogin(body);
+        break;
       case 'register':
-        return await handleRegister(body);
+        response = await handleRegister(body);
+        break;
       case 'forgot-password':
-        return await handleForgotPassword(body);
+        response = await handleForgotPassword(body);
+        break;
       default:
-        return createResponse({ message: 'Invalid action' }, 400);
+        response = createResponse({ message: 'Invalid action' }, 400);
     }
+    console.log(`[${Date.now() - handlerStart}ms] Handler completed, total: ${Date.now() - startTime}ms`);
+    return response;
   } catch (error) {
-    console.error('Auth error:', error);
+    console.error(`[${Date.now() - startTime}ms] Auth error:`, error);
     return createResponse({ message: 'An error occurred', error: error.message }, 500);
   }
 };
@@ -76,6 +88,9 @@ async function handleLogin(body) {
   }
 
   try {
+    console.log(`[Login] Starting login for user: ${username}`);
+    const queryStart = Date.now();
+    
     // Add timeout to Supabase query
     const queryPromise = supabase
       .from('users')
@@ -88,6 +103,7 @@ async function handleLogin(body) {
     );
 
     const { data: users, error } = await Promise.race([queryPromise, timeoutPromise]);
+    console.log(`[Login] Query completed in ${Date.now() - queryStart}ms`);
 
     if (error) {
       console.error('Supabase query error:', error);
