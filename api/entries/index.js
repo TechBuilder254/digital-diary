@@ -4,7 +4,7 @@ const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY;
 const supabase = createClient(supabaseUrl, supabaseKey);
 
-const { handleCORS, createResponse, parseBody, getPathParams } = require('../helpers/handler');
+const { handleCORS, createResponse, parseBody, getPathParams } = require('../../lib/handler');
 
 module.exports = async (req) => {
   const corsResponse = handleCORS(req);
