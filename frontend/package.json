@@ -5,10 +5,6 @@
   "dependencies": {
     "@react-three/drei": "^10.7.6",
     "@react-three/fiber": "^9.3.0",
-    "@testing-library/dom": "^10.4.0",
-    "@testing-library/jest-dom": "^6.6.3",
-    "@testing-library/react": "^16.3.0",
-    "@testing-library/user-event": "^13.5.0",
     "axios": "^1.8.4",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
@@ -25,13 +21,11 @@
     "start:mac": "BROWSER=none react-scripts start",
     "start:no-browser": "BROWSER=none react-scripts start",
     "build": "react-scripts build",
-    "test": "react-scripts test",
     "eject": "react-scripts eject"
   },
   "eslintConfig": {
     "extends": [
-      "react-app",
-      "react-app/jest"
+      "react-app"
     ]
   },
   "proxy": "http://localhost:5000",

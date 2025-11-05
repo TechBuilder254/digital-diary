@@ -20,6 +20,8 @@ import AIChatWidget from './AIChatWidget';
 
 const LandingPage = () => {
   const navigate = useNavigate();
+  const [isNotificationVisible, setIsNotificationVisible] = React.useState(true);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false);
 
   // Force scroll to top when component mounts and setup scroll effects
   useEffect(() => {
@@ -183,25 +185,31 @@ const LandingPage = () => {
       </div>
       
       {/* Notification Banner */}
-      <div className="landing-notification-banner">
-        <div className="landing-notification-content">
-          <div className="landing-notification-left">
-            <span className="landing-notification-icon">🤖</span>
-            <span className="landing-notification-text">
-              <strong>Meet Samiya AI:</strong> Your personal wellness assistant is now live!
-            </span>
+      {isNotificationVisible && (
+        <div className="landing-notification-banner">
+          <div className="landing-notification-content">
+            <div className="landing-notification-left">
+              <span className="landing-notification-icon">🤖</span>
+              <span className="landing-notification-text">
+                <strong>Meet Samiya AI:</strong> Your personal wellness assistant is now live!
+              </span>
+            </div>
+            <button 
+              className="landing-notification-close" 
+              aria-label="Close notification"
+              onClick={() => setIsNotificationVisible(false)}
+            >
+              <span>×</span>
+            </button>
           </div>
-          <button className="landing-notification-close" aria-label="Close notification">
-            <span>×</span>
-          </button>
         </div>
-      </div>
+      )}
 
       {/* Enhanced Navigation */}
-      <nav className="landing-nav">
+      <nav className={`landing-nav ${!isNotificationVisible ? 'landing-nav-no-banner' : ''}`}>
         <div className="landing-nav-container">
           <div className="landing-nav-content">
-            <div className="landing-logo">
+            <div className="landing-logo" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
               <div className="landing-logo-icon">
                 <FaBook />
               </div>
@@ -211,52 +219,88 @@ const LandingPage = () => {
               </div>
             </div>
             
-            {/* Navigation Menu */}
-            <ul className="landing-nav-menu">
-              <li className="landing-nav-item">
-                <a href="#features" className="landing-nav-link" onClick={(e) => { e.preventDefault(); document.querySelector('.landing-features')?.scrollIntoView({ behavior: 'smooth' }); }}>
-                  Features
-                </a>
-              </li>
-              <li className="landing-nav-item">
-                <a href="#benefits" className="landing-nav-link" onClick={(e) => { e.preventDefault(); document.querySelector('.landing-benefits')?.scrollIntoView({ behavior: 'smooth' }); }}>
-                  Benefits
-                </a>
-              </li>
-              <li className="landing-nav-item">
-                <a href="#testimonials" className="landing-nav-link" onClick={(e) => { e.preventDefault(); document.querySelector('.landing-testimonials')?.scrollIntoView({ behavior: 'smooth' }); }}>
-                  Reviews
-                </a>
-              </li>
-              <li className="landing-nav-item">
-                <a href="#contact" className="landing-nav-link" onClick={(e) => { e.preventDefault(); document.querySelector('.landing-footer')?.scrollIntoView({ behavior: 'smooth' }); }}>
-                  Contact
-                </a>
-              </li>
-            </ul>
-            
-            <div className="landing-nav-cta">
-              <button
-                onClick={handleGetStarted}
-                className="landing-cta-button"
+            {/* Right Side Navigation Items */}
+            <div className="landing-nav-right">
+              {/* Navigation Menu */}
+              <ul className={`landing-nav-menu ${isMobileMenuOpen ? 'landing-nav-menu-open' : ''}`}>
+                <li className="landing-nav-item">
+                  <a href="#features" className="landing-nav-link" onClick={(e) => { 
+                    e.preventDefault(); 
+                    setIsMobileMenuOpen(false);
+                    document.querySelector('.landing-features')?.scrollIntoView({ behavior: 'smooth' }); 
+                  }}>
+                    Features
+                  </a>
+                </li>
+                <li className="landing-nav-item">
+                  <a href="#benefits" className="landing-nav-link" onClick={(e) => { 
+                    e.preventDefault(); 
+                    setIsMobileMenuOpen(false);
+                    document.querySelector('.landing-benefits')?.scrollIntoView({ behavior: 'smooth' }); 
+                  }}>
+                    Benefits
+                  </a>
+                </li>
+                <li className="landing-nav-item">
+                  <a href="#testimonials" className="landing-nav-link" onClick={(e) => { 
+                    e.preventDefault(); 
+                    setIsMobileMenuOpen(false);
+                    document.querySelector('.landing-testimonials')?.scrollIntoView({ behavior: 'smooth' }); 
+                  }}>
+                    Reviews
+                  </a>
+                </li>
+                <li className="landing-nav-item">
+                  <a href="#contact" className="landing-nav-link" onClick={(e) => { 
+                    e.preventDefault(); 
+                    setIsMobileMenuOpen(false);
+                    document.querySelector('.landing-footer')?.scrollIntoView({ behavior: 'smooth' }); 
+                  }}>
+                    Contact
+                  </a>
+                </li>
+                {/* Mobile Get Started Button */}
+                <li className="landing-nav-item landing-nav-item-cta">
+                  <button
+                    onClick={() => {
+                      setIsMobileMenuOpen(false);
+                      handleGetStarted();
+                    }}
+                    className="landing-nav-cta-mobile"
+                  >
+                    <span className="landing-cta-text">Get Started Free</span>
+                    <span className="landing-cta-arrow">→</span>
+                  </button>
+                </li>
+              </ul>
+              
+              <div className="landing-nav-cta">
+                <button
+                  onClick={handleGetStarted}
+                  className="landing-cta-button"
+                >
+                  <span className="landing-cta-text">Get Started Free</span>
+                  <span className="landing-cta-arrow">→</span>
+                </button>
+              </div>
+              
+              {/* Mobile Menu Toggle */}
+              <button 
+                className={`landing-mobile-menu-toggle ${isMobileMenuOpen ? 'landing-mobile-menu-toggle-active' : ''}`}
+                onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                aria-label="Toggle menu"
               >
-                <span className="landing-cta-text">Get Started Free</span>
-                <span className="landing-cta-arrow">→</span>
+                <span></span>
+                <span></span>
+                <span></span>
               </button>
             </div>
-            
-            {/* Mobile Menu Toggle */}
-            <button className="landing-mobile-menu-toggle">
-              <span></span>
-              <span></span>
-              <span></span>
-            </button>
           </div>
         </div>
       </nav>
 
       {/* Hero Section - Clean & Elegant */}
-      <section className="landing-hero">
+      <section className={`landing-hero ${!isNotificationVisible ? 'landing-hero-no-banner' : ''}`}>
         <div className="hero-background">
           <div className="hero-particles">
             <div className="particle particle-1"></div>

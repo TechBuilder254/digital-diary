@@ -10,9 +10,7 @@
     "dev:frontend": "cd frontend && npm start",
     "build": "cd frontend && npm run build",
     "install:all": "npm install && cd frontend && npm install",
-    "test:api": "node test-api.js",
-    "vercel-build": "cd frontend && npm install && npm run build",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "vercel-build": "cd frontend && npm install && npm run build"
   },
   "keywords": [],
   "author": "",
