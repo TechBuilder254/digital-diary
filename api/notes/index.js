@@ -1,10 +1,5 @@
-const { createClient } = require('@supabase/supabase-js');
-
-const supabaseUrl = process.env.SUPABASE_URL;
-const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY;
-const supabase = createClient(supabaseUrl, supabaseKey);
-
-const { handleCORS, createResponse, parseBody } = require('../../lib/handler');
+const { fastQuery, fastInsert, fastUpdate, fastDelete } = require('../../lib/supabase-rest');
+const { handleCORS, createResponse, parseBody, getUserId } = require('../../lib/handler');
 
 module.exports = async (req) => {
   const corsResponse = handleCORS(req);
@@ -18,60 +13,109 @@ module.exports = async (req) => {
   const id = lastPart && !isNaN(lastPart) && lastPart !== 'notes' && lastPart !== 'favorites' && lastPart !== 'category' ? lastPart : null;
   const action = lastPart === 'favorites' ? 'favorites' : (secondLastPart === 'category' ? 'category' : (secondLastPart === 'favorite' ? 'favorite' : null));
 
-  // GET /api/notes
+  // Get user_id from request
+  const userId = getUserId(req);
+
+  // GET /api/notes - Fast query (filtered by user_id)
   if (req.method === 'GET' && !id && pathname === '/api/notes') {
     try {
-      const { data: notes, error } = await supabase
-        .from('notes')
-        .select('*')
-        .order('created_at', { ascending: false });
-
-      if (error) {
-        return createResponse({ error: 'Database query error', details: error.message }, 500);
+      if (!userId || userId === null || userId === undefined) {
+        return createResponse({ error: 'User ID is required' }, 401);
       }
-
-      return createResponse(notes || [], 200);
+      
+      const numericUserId = parseInt(userId, 10);
+      if (isNaN(numericUserId)) {
+        return createResponse({ error: 'Invalid user ID' }, 401);
+      }
+      
+      const notes = await fastQuery('notes', {
+        filters: { 'user_id': numericUserId },
+        orderBy: 'created_at',
+        ascending: false,
+        timeout: 2000
+      });
+      
+      // CRITICAL SAFETY CHECK
+      const filteredNotes = Array.isArray(notes) 
+        ? notes.filter(n => {
+            const noteUserId = parseInt(n.user_id, 10);
+            return !isNaN(noteUserId) && noteUserId === numericUserId;
+          })
+        : [];
+      
+      return createResponse(filteredNotes, 200);
     } catch (err) {
-      return createResponse({ error: 'Database query error', details: err.message }, 500);
+      console.error('[Notes] Query error:', err.message);
+      return createResponse({ error: 'Database query failed' }, 500);
     }
   }
 
-  // GET /api/notes/favorites
+  // GET /api/notes/favorites (filtered by user_id)
   if (req.method === 'GET' && pathname === '/api/notes/favorites') {
     try {
-      const { data: notes, error } = await supabase
-        .from('notes')
-        .select('*')
-        .eq('is_favorite', true)
-        .order('updated_at', { ascending: false });
-
-      if (error) {
-        return createResponse({ error: 'Database query error', details: error.message }, 500);
+      if (!userId || userId === null || userId === undefined) {
+        return createResponse({ error: 'User ID is required' }, 401);
       }
-
-      return createResponse(notes || [], 200);
+      
+      const numericUserId = parseInt(userId, 10);
+      if (isNaN(numericUserId)) {
+        return createResponse({ error: 'Invalid user ID' }, 401);
+      }
+      
+      const notes = await fastQuery('notes', {
+        filters: { 'is_favorite': true, 'user_id': numericUserId },
+        orderBy: 'updated_at',
+        ascending: false,
+        timeout: 2000
+      });
+      
+      // CRITICAL SAFETY CHECK
+      const filteredNotes = Array.isArray(notes) 
+        ? notes.filter(n => {
+            const noteUserId = parseInt(n.user_id, 10);
+            return !isNaN(noteUserId) && noteUserId === numericUserId;
+          })
+        : [];
+      
+      return createResponse(filteredNotes, 200);
     } catch (err) {
-      return createResponse({ error: 'Database query error', details: err.message }, 500);
+      console.error('[Notes] Favorites query error:', err.message);
+      return createResponse({ error: 'Database query failed' }, 500);
     }
   }
 
-  // GET /api/notes/category/:category
+  // GET /api/notes/category/:category (filtered by user_id)
   if (req.method === 'GET' && pathname.startsWith('/api/notes/category/') && lastPart && lastPart !== 'category') {
     const category = lastPart;
     try {
-      const { data: notes, error } = await supabase
-        .from('notes')
-        .select('*')
-        .eq('category', category)
-        .order('created_at', { ascending: false });
-
-      if (error) {
-        return createResponse({ error: 'Database query error', details: error.message }, 500);
+      if (!userId || userId === null || userId === undefined) {
+        return createResponse({ error: 'User ID is required' }, 401);
       }
-
-      return createResponse(notes || [], 200);
+      
+      const numericUserId = parseInt(userId, 10);
+      if (isNaN(numericUserId)) {
+        return createResponse({ error: 'Invalid user ID' }, 401);
+      }
+      
+      const notes = await fastQuery('notes', {
+        filters: { 'category': category, 'user_id': numericUserId },
+        orderBy: 'created_at',
+        ascending: false,
+        timeout: 2000
+      });
+      
+      // CRITICAL SAFETY CHECK
+      const filteredNotes = Array.isArray(notes) 
+        ? notes.filter(n => {
+            const noteUserId = parseInt(n.user_id, 10);
+            return !isNaN(noteUserId) && noteUserId === numericUserId;
+          })
+        : [];
+      
+      return createResponse(filteredNotes, 200);
     } catch (err) {
-      return createResponse({ error: 'Database query error', details: err.message }, 500);
+      console.error('[Notes] Category query error:', err.message);
+      return createResponse({ error: 'Database query failed' }, 500);
     }
   }
 
@@ -81,34 +125,34 @@ module.exports = async (req) => {
       const body = await parseBody(req);
       const { title, content, category, tags, priority, is_favorite, audio_filename, audio_duration, audio_size, has_audio, user_id } = body;
 
+      // Use user_id from body or from request (headers/query)
+      const finalUserId = user_id || userId;
+
       if (!title || !content) {
         return createResponse({ error: 'Title and content are required' }, 400);
       }
-
-      const { data: newNote, error } = await supabase
-        .from('notes')
-        .insert([{
-          title,
-          content,
-          category: category || null,
-          tags: tags || null,
-          priority: priority || 'Medium',
-          is_favorite: is_favorite || false,
-          audio_filename: audio_filename || null,
-          audio_duration: audio_duration || null,
-          audio_size: audio_size || null,
-          has_audio: has_audio || false,
-          user_id: user_id || 1
-        }])
-        .select()
-        .single();
-
-      if (error) {
-        return createResponse({ error: 'Database insert error', details: error.message }, 500);
+      
+      if (!finalUserId) {
+        return createResponse({ error: 'User ID is required' }, 401);
       }
+
+      const newNote = await fastInsert('notes', {
+        title,
+        content,
+        category: category || null,
+        tags: tags || null,
+        priority: priority || 'Medium',
+        is_favorite: is_favorite || false,
+        audio_filename: audio_filename || null,
+        audio_duration: audio_duration || null,
+        audio_size: audio_size || null,
+        has_audio: has_audio || false,
+        user_id: finalUserId
+      }, 3000);
 
       return createResponse(newNote, 201);
     } catch (err) {
+      console.error('[Notes] Insert error:', err.message);
       return createResponse({ error: 'Database insert error', details: err.message }, 500);
     }
   }
@@ -116,6 +160,20 @@ module.exports = async (req) => {
   // PUT /api/notes/:id
   if (req.method === 'PUT' && id && pathname.startsWith('/api/notes/') && !pathname.includes('/favorite')) {
     try {
+      if (!userId) {
+        return createResponse({ error: 'User ID is required' }, 401);
+      }
+      
+      // Verify ownership
+      const existingNote = await fastQuery('notes', {
+        filters: { 'id': id, 'user_id': userId },
+        timeout: 2000
+      });
+      
+      if (!existingNote || existingNote.length === 0) {
+        return createResponse({ error: 'Note not found or access denied' }, 404);
+      }
+
       const body = await parseBody(req);
       const { title, content, category, tags, priority, is_favorite, audio_filename, audio_duration, audio_size, has_audio } = body;
 
@@ -123,34 +181,23 @@ module.exports = async (req) => {
         return createResponse({ error: 'Title and content are required' }, 400);
       }
 
-      const { data: updatedNote, error } = await supabase
-        .from('notes')
-        .update({
-          title,
-          content,
-          category: category || null,
-          tags: tags || null,
-          priority: priority || 'Medium',
-          is_favorite: is_favorite !== undefined ? is_favorite : false,
-          audio_filename: audio_filename || null,
-          audio_duration: audio_duration || null,
-          audio_size: audio_size || null,
-          has_audio: has_audio !== undefined ? has_audio : false
-        })
-        .eq('id', id)
-        .select()
-        .single();
+      const updateData = {
+        title,
+        content,
+        category: category || null,
+        tags: tags || null,
+        priority: priority || 'Medium',
+        is_favorite: is_favorite !== undefined ? is_favorite : false,
+        audio_filename: audio_filename || null,
+        audio_duration: audio_duration || null,
+        audio_size: audio_size || null,
+        has_audio: has_audio !== undefined ? has_audio : false
+      };
 
-      if (error) {
-        return createResponse({ error: 'Database update error', details: error.message }, 500);
-      }
-
-      if (!updatedNote) {
-        return createResponse({ error: 'Note not found' }, 404);
-      }
-
-      return createResponse(updatedNote, 200);
+      const updatedNote = await fastUpdate('notes', id, updateData, 3000);
+      return createResponse(updatedNote || { error: 'Note not found' }, updatedNote ? 200 : 404);
     } catch (err) {
+      console.error('[Notes] Update error:', err.message);
       return createResponse({ error: 'Database update error', details: err.message }, 500);
     }
   }
@@ -158,26 +205,30 @@ module.exports = async (req) => {
   // PATCH /api/notes/:id/favorite
   if (req.method === 'PATCH' && pathname.includes('/favorite') && id) {
     try {
+      if (!userId) {
+        return createResponse({ error: 'User ID is required' }, 401);
+      }
+      
+      // Verify ownership
+      const existingNote = await fastQuery('notes', {
+        filters: { 'id': id, 'user_id': userId },
+        timeout: 2000
+      });
+      
+      if (!existingNote || existingNote.length === 0) {
+        return createResponse({ error: 'Note not found or access denied' }, 404);
+      }
+      
       const body = await parseBody(req);
       const { is_favorite } = body;
 
-      const { data: updatedNote, error } = await supabase
-        .from('notes')
-        .update({ is_favorite: is_favorite ? true : false })
-        .eq('id', id)
-        .select()
-        .single();
-
-      if (error) {
-        return createResponse({ error: 'Database update error', details: error.message }, 500);
-      }
-
-      if (!updatedNote) {
-        return createResponse({ error: 'Note not found' }, 404);
-      }
-
-      return createResponse({ message: 'Favorite status updated successfully', is_favorite: updatedNote.is_favorite }, 200);
+      const updatedNote = await fastUpdate('notes', id, { is_favorite: is_favorite ? true : false }, 3000);
+      return createResponse({ 
+        message: 'Favorite status updated successfully', 
+        is_favorite: updatedNote?.is_favorite 
+      }, updatedNote ? 200 : 404);
     } catch (err) {
+      console.error('[Notes] Favorite update error:', err.message);
       return createResponse({ error: 'Database update error', details: err.message }, 500);
     }
   }
@@ -185,27 +236,27 @@ module.exports = async (req) => {
   // DELETE /api/notes/:id
   if (req.method === 'DELETE' && id && pathname.startsWith('/api/notes/') && !pathname.includes('/favorite') && !pathname.includes('/category')) {
     try {
-      const { data: deletedNote, error } = await supabase
-        .from('notes')
-        .delete()
-        .eq('id', id)
-        .select()
-        .single();
-
-      if (error) {
-        return createResponse({ error: 'Database delete error', details: error.message }, 500);
+      if (!userId) {
+        return createResponse({ error: 'User ID is required' }, 401);
       }
-
-      if (!deletedNote) {
-        return createResponse({ error: 'Note not found' }, 404);
+      
+      // Verify ownership
+      const existingNote = await fastQuery('notes', {
+        filters: { 'id': id, 'user_id': userId },
+        timeout: 2000
+      });
+      
+      if (!existingNote || existingNote.length === 0) {
+        return createResponse({ error: 'Note not found or access denied' }, 404);
       }
-
+      
+      await fastDelete('notes', id, 3000);
       return createResponse({ message: 'Note deleted successfully' }, 200);
     } catch (err) {
+      console.error('[Notes] Delete error:', err.message);
       return createResponse({ error: 'Database delete error', details: err.message }, 500);
     }
   }
 
   return createResponse({ message: 'Method not allowed' }, 405);
 };
-

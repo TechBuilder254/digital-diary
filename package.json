@@ -4,12 +4,14 @@
   "description": "",
   "main": "index.js",
   "scripts": {
+    "prestart": "./kill-ports.sh || true",
     "start": "concurrently \"npm run dev:api\" \"npm run dev:frontend\"",
     "dev": "vercel dev",
     "dev:api": "node server-dev.js",
     "dev:frontend": "cd frontend && npm start",
     "build": "cd frontend && npm run build",
-    "install:all": "npm install && cd frontend && npm install"
+    "install:all": "npm install && cd frontend && npm install",
+    "clean": "./kill-ports.sh"
   },
   "keywords": [],
   "author": "",

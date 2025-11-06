@@ -1,9 +1,4 @@
-const { createClient } = require('@supabase/supabase-js');
-
-const supabaseUrl = process.env.SUPABASE_URL;
-const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY;
-const supabase = createClient(supabaseUrl, supabaseKey);
-
+const { fastQuery } = require('../../../../lib/supabase-rest');
 const { handleCORS, createResponse } = require('../../../../lib/handler');
 
 module.exports = async (req) => {
@@ -20,23 +15,43 @@ module.exports = async (req) => {
   const id = parts[parts.length - 2]; // ID is before 'stats'
 
   try {
+    // Parallel queries for fast stats - fetch minimal data and count
     const [notesResult, todosResult, completedTodosResult, favoriteNotesResult] = await Promise.all([
-      supabase.from('notes').select('*', { count: 'exact', head: true }),
-      supabase.from('todos').select('*', { count: 'exact', head: true }).eq('is_deleted', false),
-      supabase.from('todos').select('*', { count: 'exact', head: true }).eq('completed', true).eq('is_deleted', false),
-      supabase.from('notes').select('*', { count: 'exact', head: true }).eq('is_favorite', true)
+      fastQuery('notes', { select: 'id', limit: 1000, timeout: 2000 }).catch(() => []),
+      fastQuery('todos', { 
+        filters: { 'is_deleted': false }, 
+        select: 'id', 
+        limit: 1000, 
+        timeout: 2000 
+      }).catch(() => []),
+      fastQuery('todos', { 
+        filters: { 'completed': true, 'is_deleted': false }, 
+        select: 'id', 
+        limit: 1000, 
+        timeout: 2000 
+      }).catch(() => []),
+      fastQuery('notes', { 
+        filters: { 'is_favorite': true }, 
+        select: 'id', 
+        limit: 1000, 
+        timeout: 2000 
+      }).catch(() => [])
     ]);
 
     const stats = {
-      totalNotes: notesResult.count || 0,
-      totalTodos: todosResult.count || 0,
-      completedTodos: completedTodosResult.count || 0,
-      favoriteNotes: favoriteNotesResult.count || 0
+      totalNotes: Array.isArray(notesResult) ? notesResult.length : 0,
+      totalTodos: Array.isArray(todosResult) ? todosResult.length : 0,
+      completedTodos: Array.isArray(completedTodosResult) ? completedTodosResult.length : 0,
+      favoriteNotes: Array.isArray(favoriteNotesResult) ? favoriteNotesResult.length : 0
     };
 
     return createResponse(stats, 200);
   } catch (err) {
-    return createResponse({ error: 'Database error', details: err.message }, 500);
+    console.error('[Stats] Query error:', err.message);
+    return createResponse({ 
+      error: 'Database error', 
+      details: err.message,
+      stats: { totalNotes: 0, totalTodos: 0, completedTodos: 0, favoriteNotes: 0 }
+    }, 500);
   }
 };
-

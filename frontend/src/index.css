@@ -1,38 +1,50 @@
-/* Custom styles */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
 
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
+@layer base {
+  * {
+    @apply box-border;
+  }
+
+  html, body {
+    @apply m-0 p-0 h-full overflow-x-hidden;
+  }
+
+  body {
+    @apply font-sans antialiased relative top-0 left-0;
+    font-family: 'Inter', sans-serif;
+  }
+
+  #root {
+    @apply m-0 p-0 min-h-screen relative top-0 left-0;
+  }
+
+  html {
+    @apply scroll-smooth;
+  }
 }
 
-html, body {
-  margin: 0;
-  padding: 0;
-  height: 100%;
-  overflow-x: hidden;
+@layer utilities {
+  .animate-float {
+    animation: float 3s ease-in-out infinite;
+  }
+  
+  .animate-bounce-slow {
+    animation: bounce-slow 2s ease-in-out infinite;
+  }
+  
+  .delay-500 {
+    animation-delay: 500ms;
+  }
+  
+  .delay-1000 {
+    animation-delay: 1000ms;
+  }
 }
 
-body {
-  font-family: 'Inter', sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  position: relative;
-  top: 0;
-  left: 0;
-}
-
-#root {
-  margin: 0;
-  padding: 0;
-  min-height: 100vh;
-  position: relative;
-  top: 0;
-  left: 0;
-}
-
-/* Custom animations */
 @keyframes float {
   0%, 100% {
     transform: translateY(0px);
@@ -42,8 +54,13 @@ body {
   }
 }
 
-.animate-float {
-  animation: float 3s ease-in-out infinite;
+@keyframes bounce-slow {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
 }
 
 /* Custom scrollbar */
@@ -52,19 +69,13 @@ body {
 }
 
 ::-webkit-scrollbar-track {
-  background: #f1f1f1;
+  @apply bg-gray-100;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: linear-gradient(135deg, #3b82f6, #8b5cf6);
-  border-radius: 4px;
+  @apply bg-gradient-to-br from-blue-500 to-purple-600 rounded;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: linear-gradient(135deg, #2563eb, #7c3aed);
-}
-
-/* Smooth scrolling */
-html {
-  scroll-behavior: smooth;
+  @apply from-blue-600 to-purple-700;
 }

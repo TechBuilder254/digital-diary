@@ -1,10 +1,5 @@
-const { createClient } = require('@supabase/supabase-js');
-
-const supabaseUrl = process.env.SUPABASE_URL;
-const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY;
-const supabase = createClient(supabaseUrl, supabaseKey);
-
-const { handleCORS, createResponse, parseBody } = require('../../lib/handler');
+const { fastQuery, fastInsert, fastUpdate, fastDelete } = require('../../lib/supabase-rest');
+const { handleCORS, createResponse, parseBody, getUserId } = require('../../lib/handler');
 
 module.exports = async (req) => {
   const corsResponse = handleCORS(req);
@@ -15,45 +10,77 @@ module.exports = async (req) => {
   const parts = pathname.split('/').filter(p => p);
   const lastPart = parts[parts.length - 1];
   const secondLastPart = parts[parts.length - 2];
-  // Check if last part is a number (ID) or route name
   const id = lastPart && !isNaN(lastPart) && lastPart !== 'todo' && lastPart !== 'trash' ? lastPart : null;
   const action = lastPart === 'trash' ? 'trash' : (secondLastPart && !isNaN(secondLastPart) ? lastPart : null);
 
-  // GET /api/todo
+  // Get user_id from request
+  const userId = getUserId(req);
+
+  // GET /api/todo - Fast query (filtered by user_id)
   if (req.method === 'GET' && !id && pathname === '/api/todo') {
     try {
-      const { data: todos, error } = await supabase
-        .from('todos')
-        .select('*')
-        .eq('is_deleted', false)
-        .order('created_at', { ascending: false });
-
-      if (error) {
-        return createResponse({ error: 'Database query error', details: error.message }, 500);
+      if (!userId || userId === null || userId === undefined) {
+        return createResponse({ error: 'User ID is required' }, 401);
       }
-
-      return createResponse(todos || [], 200);
+      
+      const numericUserId = parseInt(userId, 10);
+      if (isNaN(numericUserId)) {
+        return createResponse({ error: 'Invalid user ID' }, 401);
+      }
+      
+      const todos = await fastQuery('todos', {
+        filters: { 'is_deleted': false, 'user_id': numericUserId },
+        orderBy: 'created_at',
+        ascending: false,
+        timeout: 2000
+      });
+      
+      // CRITICAL SAFETY CHECK
+      const filteredTodos = Array.isArray(todos) 
+        ? todos.filter(t => {
+            const todoUserId = parseInt(t.user_id, 10);
+            return !isNaN(todoUserId) && todoUserId === numericUserId;
+          })
+        : [];
+      
+      return createResponse(filteredTodos, 200);
     } catch (err) {
-      return createResponse({ error: 'Database query error', details: err.message }, 500);
+      console.error('[Todos] Query error:', err.message);
+      return createResponse({ error: 'Database query failed' }, 500);
     }
   }
 
-  // GET /api/todo/trash
+  // GET /api/todo/trash (filtered by user_id)
   if (req.method === 'GET' && lastPart === 'trash' && pathname === '/api/todo/trash') {
     try {
-      const { data: todos, error } = await supabase
-        .from('todos')
-        .select('*')
-        .eq('is_deleted', true)
-        .order('deleted_at', { ascending: false });
-
-      if (error) {
-        return createResponse({ error: 'Database query error', details: error.message }, 500);
+      if (!userId || userId === null || userId === undefined) {
+        return createResponse({ error: 'User ID is required' }, 401);
       }
-
-      return createResponse(todos || [], 200);
+      
+      const numericUserId = parseInt(userId, 10);
+      if (isNaN(numericUserId)) {
+        return createResponse({ error: 'Invalid user ID' }, 401);
+      }
+      
+      const todos = await fastQuery('todos', {
+        filters: { 'is_deleted': true, 'user_id': numericUserId },
+        orderBy: 'deleted_at',
+        ascending: false,
+        timeout: 2000
+      });
+      
+      // CRITICAL SAFETY CHECK
+      const filteredTodos = Array.isArray(todos) 
+        ? todos.filter(t => {
+            const todoUserId = parseInt(t.user_id, 10);
+            return !isNaN(todoUserId) && todoUserId === numericUserId;
+          })
+        : [];
+      
+      return createResponse(filteredTodos, 200);
     } catch (err) {
-      return createResponse({ error: 'Database query error', details: err.message }, 500);
+      console.error('[Todos] Trash query error:', err.message);
+      return createResponse({ error: 'Database query failed' }, 500);
     }
   }
 
@@ -61,148 +88,151 @@ module.exports = async (req) => {
   if (req.method === 'POST' && pathname === '/api/todo') {
     try {
       const body = await parseBody(req);
-      const { text, completed, expiry_date, user_id } = body;
+      const { text, user_id, expiry_date } = body;
+
+      // Use user_id from body or from request (headers/query)
+      const finalUserId = user_id || userId;
 
       if (!text) {
         return createResponse({ error: 'Text is required' }, 400);
       }
-
-      const { data: newTodo, error } = await supabase
-        .from('todos')
-        .insert([{
-          text,
-          completed: completed || false,
-          expiry_date: expiry_date || null,
-          user_id: user_id || 1
-        }])
-        .select()
-        .single();
-
-      if (error) {
-        return createResponse({ error: 'Database insert error', details: error.message }, 500);
+      
+      if (!finalUserId) {
+        return createResponse({ error: 'User ID is required' }, 401);
       }
 
-      return createResponse({ message: 'To-Do item created', todoId: newTodo.id, todo: newTodo }, 201);
+      const newTodo = await fastInsert('todos', {
+        text,
+        user_id: finalUserId,
+        completed: false,
+        is_deleted: false,
+        expiry_date: expiry_date || null
+      }, 3000);
+
+      return createResponse(newTodo, 201);
     } catch (err) {
-      return createResponse({ error: 'Database insert error', details: err.message }, 500);
+      console.error('[Todos] Insert error:', err.message);
+      return createResponse({ error: 'Database query error', details: err.message }, 500);
     }
   }
 
   // PUT /api/todo/:id
-  if (req.method === 'PUT' && id && pathname.startsWith('/api/todo/') && !pathname.includes('/restore')) {
+  if (req.method === 'PUT' && id && pathname.startsWith('/api/todo/')) {
     try {
-      const body = await parseBody(req);
-      const { text, completed, expiry_date, is_deleted, deleted_at } = body;
-
-      if (text === undefined && completed === undefined && expiry_date === undefined && is_deleted === undefined) {
-        return createResponse({ error: 'At least one field is required for update' }, 400);
+      if (!userId) {
+        return createResponse({ error: 'User ID is required' }, 401);
       }
+      
+      // Verify ownership
+      const existingTodo = await fastQuery('todos', {
+        filters: { 'id': id, 'user_id': userId },
+        timeout: 2000
+      });
+      
+      if (!existingTodo || existingTodo.length === 0) {
+        return createResponse({ error: 'Todo not found or access denied' }, 404);
+      }
+
+      const body = await parseBody(req);
+      const { text, completed, expiry_date } = body;
 
       const updateData = {};
       if (text !== undefined) updateData.text = text;
       if (completed !== undefined) updateData.completed = completed;
       if (expiry_date !== undefined) updateData.expiry_date = expiry_date;
-      if (is_deleted !== undefined) updateData.is_deleted = is_deleted;
-      if (deleted_at !== undefined) updateData.deleted_at = deleted_at;
 
-      const { data: updatedTodo, error } = await supabase
-        .from('todos')
-        .update(updateData)
-        .eq('id', id)
-        .select()
-        .single();
-
-      if (error) {
-        return createResponse({ error: 'Database update error', details: error.message }, 500);
-      }
-
-      if (!updatedTodo) {
-        return createResponse({ error: 'To-Do item not found' }, 404);
-      }
-
-      return createResponse({ message: 'To-Do item updated successfully', todo: updatedTodo }, 200);
+      const updatedTodo = await fastUpdate('todos', id, updateData, 3000);
+      return createResponse(updatedTodo || { error: 'Todo not found' }, updatedTodo ? 200 : 404);
     } catch (err) {
-      return createResponse({ error: 'Database update error', details: err.message }, 500);
+      console.error('[Todos] Update error:', err.message);
+      return createResponse({ error: 'Database query error', details: err.message }, 500);
     }
   }
 
   // PUT /api/todo/:id/restore
-  if (req.method === 'PUT' && pathname.includes('/restore') && id) {
+  if (req.method === 'PUT' && action === 'restore' && pathname.includes('/restore')) {
     try {
-      const { data: restoredTodo, error } = await supabase
-        .from('todos')
-        .update({ is_deleted: false, deleted_at: null })
-        .eq('id', id)
-        .select()
-        .single();
-
-      if (error) {
-        return createResponse({ error: 'Database restore error', details: error.message }, 500);
+      if (!userId) {
+        return createResponse({ error: 'User ID is required' }, 401);
       }
-
-      if (!restoredTodo) {
-        return createResponse({ error: 'To-Do item not found in trash' }, 404);
+      
+      const todoId = secondLastPart;
+      
+      // Verify ownership
+      const existingTodo = await fastQuery('todos', {
+        filters: { 'id': todoId, 'user_id': userId },
+        timeout: 2000
+      });
+      
+      if (!existingTodo || existingTodo.length === 0) {
+        return createResponse({ error: 'Todo not found or access denied' }, 404);
       }
-
-      return createResponse({ message: 'To-Do item restored successfully' }, 200);
+      
+      const updatedTodo = await fastUpdate('todos', todoId, {
+        is_deleted: false,
+        deleted_at: null
+      }, 3000);
+      return createResponse(updatedTodo || { error: 'Todo not found' }, updatedTodo ? 200 : 404);
     } catch (err) {
-      return createResponse({ error: 'Database restore error', details: err.message }, 500);
+      console.error('[Todos] Restore error:', err.message);
+      return createResponse({ error: 'Database query error', details: err.message }, 500);
     }
   }
 
-  // DELETE /api/todo/:id
-  if (req.method === 'DELETE' && id && !pathname.includes('/permanent')) {
+  // DELETE /api/todo/:id (soft delete)
+  if (req.method === 'DELETE' && id && pathname.startsWith('/api/todo/')) {
     try {
-      const { data: deletedTodo, error } = await supabase
-        .from('todos')
-        .update({ is_deleted: true, deleted_at: new Date().toISOString() })
-        .eq('id', id)
-        .select()
-        .single();
-
-      if (error) {
-        return createResponse({ error: 'Database delete error', details: error.message }, 500);
+      if (!userId) {
+        return createResponse({ error: 'User ID is required' }, 401);
       }
-
-      if (!deletedTodo) {
-        return createResponse({ error: 'To-Do item not found' }, 404);
+      
+      // Verify ownership
+      const existingTodo = await fastQuery('todos', {
+        filters: { 'id': id, 'user_id': userId },
+        timeout: 2000
+      });
+      
+      if (!existingTodo || existingTodo.length === 0) {
+        return createResponse({ error: 'Todo not found or access denied' }, 404);
       }
-
-      return createResponse({ message: 'To-Do item moved to trash successfully' }, 200);
+      
+      const updatedTodo = await fastUpdate('todos', id, {
+        is_deleted: true,
+        deleted_at: new Date().toISOString()
+      }, 3000);
+      return createResponse({ message: 'Todo deleted successfully' }, 200);
     } catch (err) {
-      return createResponse({ error: 'Database delete error', details: err.message }, 500);
+      console.error('[Todos] Delete error:', err.message);
+      return createResponse({ error: 'Database query error', details: err.message }, 500);
     }
   }
 
-  // DELETE /api/todo/:id/permanent
-  if (req.method === 'DELETE' && pathname.includes('/permanent') && id) {
+  // DELETE /api/todo/:id/permanent (hard delete)
+  if (req.method === 'DELETE' && action === 'permanent' && pathname.includes('/permanent')) {
     try {
-      const { data: todo, error: checkError } = await supabase
-        .from('todos')
-        .select('id, is_deleted')
-        .eq('id', id)
-        .eq('is_deleted', true)
-        .single();
-
-      if (checkError || !todo) {
-        return createResponse({ error: 'To-Do item not found in trash' }, 404);
+      if (!userId) {
+        return createResponse({ error: 'User ID is required' }, 401);
       }
-
-      const { error: deleteError } = await supabase
-        .from('todos')
-        .delete()
-        .eq('id', id);
-
-      if (deleteError) {
-        return createResponse({ error: 'Database permanent delete error', details: deleteError.message }, 500);
+      
+      const todoId = secondLastPart;
+      
+      // Verify ownership
+      const existingTodo = await fastQuery('todos', {
+        filters: { 'id': todoId, 'user_id': userId },
+        timeout: 2000
+      });
+      
+      if (!existingTodo || existingTodo.length === 0) {
+        return createResponse({ error: 'Todo not found or access denied' }, 404);
       }
-
-      return createResponse({ message: 'To-Do item permanently deleted' }, 200);
+      
+      await fastDelete('todos', todoId, 3000);
+      return createResponse({ message: 'Todo permanently deleted' }, 200);
     } catch (err) {
-      return createResponse({ error: 'Database permanent delete error', details: err.message }, 500);
+      console.error('[Todos] Permanent delete error:', err.message);
+      return createResponse({ error: 'Database query error', details: err.message }, 500);
     }
   }
 
   return createResponse({ message: 'Method not allowed' }, 405);
 };
-

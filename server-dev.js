@@ -73,8 +73,20 @@ const server = http.createServer(async (req, res) => {
     try {
       // Create a simple Headers-like object
       const headers = {
-        get: (name) => req.headers[name.toLowerCase()],
-        has: (name) => !!req.headers[name.toLowerCase()],
+        get: (name) => {
+          const lowerName = name.toLowerCase();
+          // Node.js headers are already lowercased, but check both
+          return req.headers[lowerName] || req.headers[name];
+        },
+        has: (name) => {
+          const lowerName = name.toLowerCase();
+          return !!(req.headers[lowerName] || req.headers[name]);
+        },
+        entries: function* () {
+          for (const [key, value] of Object.entries(req.headers)) {
+            yield [key, value];
+          }
+        },
       };
       // Add iterator for compatibility
       headers[Symbol.iterator] = function* () {
@@ -82,6 +94,14 @@ const server = http.createServer(async (req, res) => {
           yield [key, value];
         }
       };
+      
+      // Debug: log Authorization header
+      const authHeader = headers.get('authorization') || headers.get('Authorization');
+      if (authHeader) {
+        console.log(`[Server] Found Authorization header: ${authHeader.substring(0, 30)}...`);
+      } else {
+        console.log(`[Server] No Authorization header found. Available headers:`, Object.keys(req.headers));
+      }
 
       // Create Web API compatible request
       // The URL should be the full path including the API path
@@ -93,6 +113,15 @@ const server = http.createServer(async (req, res) => {
         text: async () => body,
         formData: async () => null,
       };
+      
+      // Debug: Log request details for API calls
+      if (pathname.startsWith('/api/') && pathname !== '/api/auth') {
+        console.log(`[Server] API Request: ${req.method} ${pathname}`);
+        console.log(`[Server] Authorization header present: ${!!authHeader}`);
+        if (authHeader) {
+          console.log(`[Server] Auth header value: ${authHeader.substring(0, 40)}...`);
+        }
+      }
 
       // Find handler
       let handler = null;

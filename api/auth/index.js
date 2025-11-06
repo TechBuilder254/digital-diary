@@ -12,17 +12,25 @@ if (!supabaseUrl || !supabaseKey) {
   });
 }
 
-// Create Supabase client with timeout configuration
+// Create Supabase client with optimized configuration for performance
 const supabase = supabaseUrl && supabaseKey ? createClient(supabaseUrl, supabaseKey, {
   auth: {
-    persistSession: false
+    persistSession: false,
+    autoRefreshToken: false,
+    detectSessionInUrl: false
   },
   db: {
     schema: 'public'
   },
   global: {
     headers: {
-      'x-client-info': 'digital-diary-api'
+      'x-client-info': 'digital-diary-api',
+      'Connection': 'keep-alive'
+    }
+  },
+  realtime: {
+    params: {
+      eventsPerSecond: 2
     }
   }
 }) : null;
@@ -89,35 +97,93 @@ async function handleLogin(body) {
     return createResponse({ message: 'Both username and password are required' }, 400);
   }
 
+  // Trim username but keep case-sensitive (database stores case-sensitive usernames)
+  const trimmedUsername = username.trim();
+
   try {
-    console.log(`[Login] Starting login for user: ${username}`);
+    console.log(`[Login] Starting login for user: ${trimmedUsername}`);
+    console.log(`[Login] Supabase URL: ${supabaseUrl ? supabaseUrl.substring(0, 30) + '...' : 'MISSING'}`);
     const queryStart = Date.now();
     
-    // Add timeout to Supabase query - use shorter timeout for faster failure
-    const queryPromise = supabase
-      .from('users')
-      .select('id, username, email, password')
-      .eq('username', username)
-      .limit(1);
-
-    const timeoutPromise = new Promise((_, reject) => 
-      setTimeout(() => reject(new Error('Database query timeout after 8 seconds')), 8000)
-    );
-
-    let queryResult;
-    try {
-      queryResult = await Promise.race([queryPromise, timeoutPromise]);
-    } catch (timeoutError) {
-      console.error(`[Login] Query timed out after ${Date.now() - queryStart}ms:`, timeoutError.message);
-      return createResponse({ message: 'Request timeout - database connection issue', error: timeoutError.message }, 504);
+    // Use direct REST API call instead of JS client for better performance in serverless
+    // This bypasses the JS client overhead and is faster for simple queries
+    if (!supabaseUrl || !supabaseKey) {
+      throw new Error('Supabase configuration missing');
     }
     
-    const { data: users, error } = queryResult;
-    console.log(`[Login] Query completed in ${Date.now() - queryStart}ms`);
+    const restUrl = `${supabaseUrl}/rest/v1/users?username=eq.${encodeURIComponent(trimmedUsername)}&select=id,username,email,password&limit=1`;
+    
+    // Create AbortController for timeout (3 seconds for REST API, faster than JS client)
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => {
+      controller.abort();
+      console.error(`[Login] REST API request aborted after 3000ms`);
+    }, 3000);
+    
+    const fetchPromise = fetch(restUrl, {
+      method: 'GET',
+      headers: {
+        'apikey': supabaseKey,
+        'Authorization': `Bearer ${supabaseKey}`,
+        'Content-Type': 'application/json',
+        'Prefer': 'return=representation'
+      },
+      signal: controller.signal
+    }).then(async (response) => {
+      clearTimeout(timeoutId);
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`HTTP ${response.status}: ${errorText}`);
+      }
+      return response.json();
+    }).catch((error) => {
+      clearTimeout(timeoutId);
+      throw error;
+    });
 
-    if (error) {
-      console.error('Supabase query error:', error);
-      return createResponse({ message: 'Database error', error: error.message }, 500);
+    let users;
+    try {
+      users = await fetchPromise;
+      console.log(`[Login] Query completed in ${Date.now() - queryStart}ms`);
+    } catch (fetchError) {
+      const elapsed = Date.now() - queryStart;
+      console.error(`[Login] REST API failed after ${elapsed}ms:`, fetchError.message);
+      
+      // If it's a timeout or connection error, don't fallback (it will be slow too)
+      if (fetchError.name === 'AbortError' || fetchError.message.includes('timeout') || fetchError.message.includes('fetch')) {
+        console.error('[Login] Connection timeout - not attempting fallback');
+        return createResponse({ 
+          message: 'Database connection timeout', 
+          error: 'Unable to connect to database. Please try again.' 
+        }, 504);
+      }
+      
+      // Fallback to JS client only for non-timeout errors
+      console.log('[Login] Falling back to JS client...');
+      try {
+        const queryPromise = supabase
+          .from('users')
+          .select('id, username, email, password')
+          .eq('username', trimmedUsername)
+          .maybeSingle();
+        
+        const timeoutPromise = new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Database query timeout')), 2000)
+        );
+        
+        const queryResult = await Promise.race([queryPromise, timeoutPromise]);
+        users = queryResult.data ? [queryResult.data] : [];
+        if (queryResult.error) {
+          throw new Error(queryResult.error.message);
+        }
+        console.log(`[Login] Fallback query completed in ${Date.now() - queryStart}ms`);
+      } catch (fallbackError) {
+        console.error(`[Login] Fallback also failed:`, fallbackError.message);
+        return createResponse({ 
+          message: 'Database connection failed', 
+          error: 'Unable to connect to database' 
+        }, 503);
+      }
     }
 
     if (!users || users.length === 0) {
