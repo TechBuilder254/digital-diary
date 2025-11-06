@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import type { IconType } from 'react-icons';
 import { useNavigate } from 'react-router-dom';
 import { 
   FaBook, 
@@ -18,7 +19,7 @@ import {
 import AIChatWidget from './AIChatWidget';
 
 interface Feature {
-  icon: React.ComponentType<{ className?: string }>;
+  icon: IconType;
   title: string;
   description: string;
   color: string;

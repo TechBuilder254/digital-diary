@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import type { IconType } from 'react-icons';
 import { Link } from 'react-router-dom';
 import axios from '../config/axios';
 import { 
@@ -26,7 +27,7 @@ interface RecentActivity {
   type: string;
   text: string;
   time: string;
-  icon: React.ComponentType<{ className?: string }>;
+  icon: IconType;
 }
 
 interface AIData {

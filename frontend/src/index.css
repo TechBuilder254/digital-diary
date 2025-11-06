@@ -5,22 +5,22 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
 
 @layer base {
-  * {
+* {
     @apply box-border;
-  }
+}
 
-  html, body {
+html, body {
     @apply m-0 p-0 h-full overflow-x-hidden;
-  }
+}
 
-  body {
+body {
     @apply font-sans antialiased relative top-0 left-0;
-    font-family: 'Inter', sans-serif;
-  }
+  font-family: 'Inter', sans-serif;
+}
 
-  #root {
+#root {
     @apply m-0 p-0 min-h-screen relative top-0 left-0;
-  }
+}
 
   html {
     @apply scroll-smooth;
