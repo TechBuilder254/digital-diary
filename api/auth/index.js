@@ -115,10 +115,11 @@ async function handleLogin(body) {
     
     // Create AbortController for timeout (3 seconds for REST API, faster than JS client)
     const controller = new AbortController();
+    const REST_TIMEOUT_MS = parseInt(process.env.SUPABASE_REST_TIMEOUT_MS || '8000', 10);
     const timeoutId = setTimeout(() => {
       controller.abort();
-      console.error(`[Login] REST API request aborted after 3000ms`);
-    }, 3000);
+      console.error(`[Login] REST API request aborted after ${REST_TIMEOUT_MS}ms`);
+    }, REST_TIMEOUT_MS);
     
     const fetchPromise = fetch(restUrl, {
       method: 'GET',
@@ -167,8 +168,9 @@ async function handleLogin(body) {
           .eq('username', trimmedUsername)
           .maybeSingle();
         
+        const CLIENT_TIMEOUT_MS = parseInt(process.env.SUPABASE_CLIENT_TIMEOUT_MS || '6000', 10);
         const timeoutPromise = new Promise((_, reject) => 
-          setTimeout(() => reject(new Error('Database query timeout')), 2000)
+          setTimeout(() => reject(new Error('Database query timeout')), CLIENT_TIMEOUT_MS)
         );
         
         const queryResult = await Promise.race([queryPromise, timeoutPromise]);
