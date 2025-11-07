@@ -149,43 +149,12 @@ async function handleLogin(body) {
     } catch (fetchError) {
       const elapsed = Date.now() - queryStart;
       console.error(`[Login] REST API failed after ${elapsed}ms:`, fetchError.message);
-      
-      // If it's a timeout or connection error, don't fallback (it will be slow too)
-      if (fetchError.name === 'AbortError' || fetchError.message.includes('timeout') || fetchError.message.includes('fetch')) {
-        console.error('[Login] Connection timeout - not attempting fallback');
-        return createResponse({ 
-          message: 'Database connection timeout', 
-          error: 'Unable to connect to database. Please try again.' 
-        }, 504);
+
+      const fallbackResult = await queryWithSupabaseClient(trimmedUsername, queryStart);
+      if (!fallbackResult.ok) {
+        return fallbackResult.response;
       }
-      
-      // Fallback to JS client only for non-timeout errors
-      console.log('[Login] Falling back to JS client...');
-      try {
-        const queryPromise = supabase
-          .from('users')
-          .select('id, username, email, password')
-          .eq('username', trimmedUsername)
-          .maybeSingle();
-        
-        const CLIENT_TIMEOUT_MS = parseInt(process.env.SUPABASE_CLIENT_TIMEOUT_MS || '6000', 10);
-        const timeoutPromise = new Promise((_, reject) => 
-          setTimeout(() => reject(new Error('Database query timeout')), CLIENT_TIMEOUT_MS)
-        );
-        
-        const queryResult = await Promise.race([queryPromise, timeoutPromise]);
-        users = queryResult.data ? [queryResult.data] : [];
-        if (queryResult.error) {
-          throw new Error(queryResult.error.message);
-        }
-        console.log(`[Login] Fallback query completed in ${Date.now() - queryStart}ms`);
-      } catch (fallbackError) {
-        console.error(`[Login] Fallback also failed:`, fallbackError.message);
-        return createResponse({ 
-          message: 'Database connection failed', 
-          error: 'Unable to connect to database' 
-        }, 503);
-      }
+      users = fallbackResult.users;
     }
 
     if (!users || users.length === 0) {
@@ -223,6 +192,39 @@ async function handleLogin(body) {
   } catch (error) {
     console.error('Login handler error:', error);
     return createResponse({ message: 'Login failed', error: error.message }, 500);
+  }
+}
+
+async function queryWithSupabaseClient(trimmedUsername, queryStart) {
+  try {
+    const CLIENT_TIMEOUT_MS = parseInt(process.env.SUPABASE_CLIENT_TIMEOUT_MS || '10000', 10);
+    const queryPromise = supabase
+      .from('users')
+      .select('id, username, email, password')
+      .eq('username', trimmedUsername)
+      .maybeSingle();
+
+    const timeoutPromise = new Promise((_, reject) =>
+      setTimeout(() => reject(new Error('Database query timeout')), CLIENT_TIMEOUT_MS)
+    );
+
+    const queryResult = await Promise.race([queryPromise, timeoutPromise]);
+    if (queryResult && queryResult.error) {
+      throw new Error(queryResult.error.message);
+    }
+
+    const users = queryResult && queryResult.data ? [queryResult.data] : [];
+    console.log(`[Login] Supabase client query completed in ${Date.now() - queryStart}ms`);
+    return { ok: true, users };
+  } catch (fallbackError) {
+    console.error('[Login] Supabase client fallback failed:', fallbackError.message);
+    return {
+      ok: false,
+      response: createResponse({
+        message: 'Database connection failed',
+        error: fallbackError.message || 'Unable to connect to database',
+      }, fallbackError.message && fallbackError.message.includes('timeout') ? 504 : 503),
+    };
   }
 }
 
