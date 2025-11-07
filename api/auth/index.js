@@ -101,6 +101,18 @@ async function handleLogin(body) {
   const trimmedUsername = username.trim();
 
   try {
+    const configSummary = {
+      hasUrl: Boolean(supabaseUrl),
+      keyLength: supabaseKey ? supabaseKey.length : 0,
+    };
+    console.log('[Login] Supabase config summary:', configSummary);
+
+    const healthStatus = await checkSupabaseHealth();
+    console.log('[Login] Supabase health check:', healthStatus);
+    if (!healthStatus.ok) {
+      return createResponse({ message: 'Supabase health check failed', error: healthStatus.error }, 503);
+    }
+
     console.log(`[Login] Starting login for user: ${trimmedUsername}`);
     console.log(`[Login] Supabase URL: ${supabaseUrl ? supabaseUrl.substring(0, 30) + '...' : 'MISSING'}`);
     const queryStart = Date.now();
@@ -225,6 +237,38 @@ async function queryWithSupabaseClient(trimmedUsername, queryStart) {
         error: fallbackError.message || 'Unable to connect to database',
       }, fallbackError.message && fallbackError.message.includes('timeout') ? 504 : 503),
     };
+  }
+}
+
+async function checkSupabaseHealth() {
+  if (!supabaseUrl) {
+    return { ok: false, error: 'Supabase URL missing' };
+  }
+
+  const healthUrl = `${supabaseUrl}/auth/v1/health`;
+  const HEALTH_TIMEOUT_MS = parseInt(process.env.SUPABASE_HEALTH_TIMEOUT_MS || '2000', 10);
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), HEALTH_TIMEOUT_MS);
+
+  try {
+    const response = await fetch(healthUrl, {
+      method: 'GET',
+      headers: {
+        'apikey': supabaseKey || '',
+        'Authorization': `Bearer ${supabaseKey || ''}`,
+      },
+      signal: controller.signal,
+    });
+
+    clearTimeout(timeoutId);
+
+    return { ok: response.ok, status: response.status };
+  } catch (error) {
+    clearTimeout(timeoutId);
+    if (error.name === 'AbortError') {
+      return { ok: false, error: `Health check timeout after ${HEALTH_TIMEOUT_MS}ms` };
+    }
+    return { ok: false, error: error.message };
   }
 }
 
