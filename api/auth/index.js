@@ -125,18 +125,6 @@ async function handleLogin(body) {
   const trimmedUsername = username.trim();
 
   try {
-    const configSummary = {
-      hasUrl: Boolean(supabaseUrl),
-      keyLength: supabaseKey ? supabaseKey.length : 0,
-    };
-    log('login:config', configSummary);
-
-    const healthStatus = await checkSupabaseHealth();
-    log('login:health', healthStatus);
-    if (!healthStatus.ok) {
-      return createResponse({ message: 'Supabase health check failed', error: healthStatus.error }, 503);
-    }
-
     log('login:start', { user: trimmedUsername });
     const queryStart = Date.now();
     
@@ -150,7 +138,7 @@ async function handleLogin(body) {
     
     // Create AbortController for timeout (3 seconds for REST API, faster than JS client)
     const controller = new AbortController();
-    const REST_TIMEOUT_MS = parseInt(process.env.SUPABASE_REST_TIMEOUT_MS || '8000', 10);
+    const REST_TIMEOUT_MS = parseInt(process.env.SUPABASE_REST_TIMEOUT_MS || '3500', 10);
     const timeoutId = setTimeout(() => {
       controller.abort();
       console.error(`[Login] REST API request aborted after ${REST_TIMEOUT_MS}ms`);
@@ -235,7 +223,7 @@ async function handleLogin(body) {
 
 async function queryWithSupabaseClient(trimmedUsername, queryStart) {
   try {
-    const CLIENT_TIMEOUT_MS = parseInt(process.env.SUPABASE_CLIENT_TIMEOUT_MS || '10000', 10);
+    const CLIENT_TIMEOUT_MS = parseInt(process.env.SUPABASE_CLIENT_TIMEOUT_MS || '4000', 10);
     const queryPromise = supabase
       .from('users')
       .select('id, username, email, password')
@@ -263,38 +251,6 @@ async function queryWithSupabaseClient(trimmedUsername, queryStart) {
         error: fallbackError.message || 'Unable to connect to database',
       }, fallbackError.message && fallbackError.message.includes('timeout') ? 504 : 503),
     };
-  }
-}
-
-async function checkSupabaseHealth() {
-  if (!supabaseUrl) {
-    return { ok: false, error: 'Supabase URL missing' };
-  }
-
-  const healthUrl = `${supabaseUrl}/auth/v1/health`;
-  const HEALTH_TIMEOUT_MS = parseInt(process.env.SUPABASE_HEALTH_TIMEOUT_MS || '2000', 10);
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), HEALTH_TIMEOUT_MS);
-
-  try {
-    const response = await fetch(healthUrl, {
-      method: 'GET',
-      headers: {
-        'apikey': supabaseKey || '',
-        'Authorization': `Bearer ${supabaseKey || ''}`,
-      },
-      signal: controller.signal,
-    });
-
-    clearTimeout(timeoutId);
-
-    return { ok: response.ok, status: response.status };
-  } catch (error) {
-    clearTimeout(timeoutId);
-    if (error.name === 'AbortError') {
-      return { ok: false, error: `Health check timeout after ${HEALTH_TIMEOUT_MS}ms` };
-    }
-    return { ok: false, error: error.message };
   }
 }
 
