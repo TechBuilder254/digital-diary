@@ -76,6 +76,8 @@ module.exports = async (req) => {
     // Route based on action
     const handlerStart = Date.now();
     let response;
+    log('action:body', { action, body });
+
     switch (action) {
       case 'login':
         response = await handleLogin(body);
@@ -89,8 +91,13 @@ module.exports = async (req) => {
       default:
         response = createResponse({ message: 'Invalid action' }, 400);
     }
-    log('completed', { handlerMs: Date.now() - handlerStart, totalMs: Date.now() - startTime });
-    return response;
+    const result = await response;
+    log('completed', {
+      handlerMs: Date.now() - handlerStart,
+      totalMs: Date.now() - startTime,
+      status: result?.status,
+    });
+    return result;
   } catch (error) {
     log('error', { durationMs: Date.now() - startTime, message: error?.message, stack: error?.stack });
     return createResponse({ message: 'An error occurred', error: error.message }, 500);
@@ -99,8 +106,10 @@ module.exports = async (req) => {
 
 async function handleLogin(body) {
   const { username, password } = body;
+  log('login:body', { hasUsername: Boolean(username), hasPassword: Boolean(password) });
 
   if (!username || !password) {
+    log('login:missing-credentials');
     return createResponse({ message: 'Both username and password are required' }, 400);
   }
 
@@ -176,6 +185,7 @@ async function handleLogin(body) {
     }
 
     if (!users || users.length === 0) {
+      log('login:invalid-credentials');
       return createResponse({ message: 'Invalid credentials' }, 401);
     }
 
@@ -198,6 +208,7 @@ async function handleLogin(body) {
     }
 
     if (isMatch) {
+      log('login:success', { userId: user.id });
       return createResponse({
         message: 'Login successful',
         success: true,
@@ -205,6 +216,7 @@ async function handleLogin(body) {
         user: { id: user.id, username: user.username, email: user.email }
       }, 200);
     } else {
+      log('login:password-mismatch');
       return createResponse({ message: 'Invalid credentials' }, 401);
     }
   } catch (error) {
