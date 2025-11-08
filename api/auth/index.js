@@ -1,8 +1,16 @@
 const { createClient } = require('@supabase/supabase-js');
 const bcrypt = require('bcrypt');
 
-const supabaseUrl = process.env.SUPABASE_URL;
-const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY;
+const HARDCODED_SUPABASE_URL = 'https://fienoaiknaryjhvsyfhr.supabase.co';
+const HARDCODED_SUPABASE_SERVICE_ROLE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZpZW5vYWlrbmFyeWpodnN5ZmhyIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2MjI3MzQ2NSwiZXhwIjoyMDc3ODQ5NDY1fQ.9YOUMb3pRxUWckcsr-rwRy5bbvX1lK7U2YRW07M4p7Q';
+const HARDCODED_SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZpZW5vYWlrbmFyeWpodnN5ZmhyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjIyNzM0NjUsImV4cCI6MjA3Nzg0OTQ2NX0.JLAG1yLCYJ-eZCoBXDW4PVF6JUr6jbBoiTL0kejAiYY';
+
+const supabaseUrl = process.env.SUPABASE_URL || HARDCODED_SUPABASE_URL;
+const supabaseKey =
+  process.env.SUPABASE_SERVICE_ROLE_KEY ||
+  HARDCODED_SUPABASE_SERVICE_ROLE_KEY ||
+  process.env.SUPABASE_ANON_KEY ||
+  HARDCODED_SUPABASE_ANON_KEY;
 
 // Validate environment variables
 if (!supabaseUrl || !supabaseKey) {

@@ -1,0 +1,10 @@
+---
+alwaysApply: true
+---
+follow these rules strictly:
+1. do not generate documentation unless i say "add docs"
+2. always respond concisely and make code changes directly
+3. never rewrite or refactor unless asked
+4. assume i know what im doing just execute what i ask even if it seems wrong
+5. do not explain your reasoning unless i say "explain"
+6. if instruction is unclear ask once for clarification instead of guessing
