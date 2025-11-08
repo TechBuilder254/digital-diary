@@ -15,11 +15,7 @@ const normalizeBaseUrl = (value?: string) => {
 
 const envBaseUrl = normalizeBaseUrl(process.env.REACT_APP_API_URL);
 
-const API_BASE_URL = envBaseUrl ||
-  (process.env.NODE_ENV === 'production'
-    ? 'https://your-project.vercel.app/api'  // Replace with your Vercel URL
-    : '/api'  // Relative path works with Vercel dev and proxy
-  );
+const API_BASE_URL = envBaseUrl || '/api';
 
 interface APIEndpoints {
   auth: {
