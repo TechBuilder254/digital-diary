@@ -1,8 +1,22 @@
 // API Configuration
 // This allows easy switching between local development and production
 
-const API_BASE_URL = process.env.REACT_APP_API_URL || 
-  (process.env.NODE_ENV === 'production' 
+const normalizeBaseUrl = (value?: string) => {
+  if (!value) {
+    return undefined;
+  }
+
+  const trimmed = value.replace(/\/+$/, '');
+  if (trimmed.endsWith('/api')) {
+    return trimmed;
+  }
+  return `${trimmed}/api`;
+};
+
+const envBaseUrl = normalizeBaseUrl(process.env.REACT_APP_API_URL);
+
+const API_BASE_URL = envBaseUrl ||
+  (process.env.NODE_ENV === 'production'
     ? 'https://your-project.vercel.app/api'  // Replace with your Vercel URL
     : '/api'  // Relative path works with Vercel dev and proxy
   );

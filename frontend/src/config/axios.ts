@@ -1,8 +1,9 @@
 import axios from 'axios';
+import API_CONFIG from './api';
 
 // Create axios instance with default config
 const axiosInstance = axios.create({
-  baseURL: '/api',
+  baseURL: API_CONFIG.baseURL.startsWith('http') ? API_CONFIG.baseURL : undefined,
   headers: {
     'Content-Type': 'application/json',
   },
@@ -11,34 +12,29 @@ const axiosInstance = axios.create({
 // Request interceptor to add Authorization header
 axiosInstance.interceptors.request.use(
   (config) => {
-    // Get token from localStorage
-    const token = localStorage.getItem('token');
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-      console.log('[Axios] Added Authorization header with token');
-    } else {
-      console.warn('[Axios] No token found in localStorage');
-    }
-    
-    // Also add user_id as query param if available (for GET requests)
-    // This is a fallback in case Authorization header doesn't work
-    const user = localStorage.getItem('user');
-    if (user && (config.method === 'get' || !config.method)) {
-      try {
-        const userObj = JSON.parse(user);
-        if (userObj?.id) {
-          // Add user_id to existing params
-          config.params = config.params || {};
-          if (typeof config.params === 'object' && !Array.isArray(config.params)) {
-            config.params.user_id = userObj.id.toString();
-            console.log('[Axios] Added user_id to query params:', userObj.id);
+    if (typeof window !== 'undefined') {
+      const token = window.localStorage.getItem('token') ?? window.sessionStorage.getItem('token');
+      if (token) {
+        config.headers.Authorization = `Bearer ${token}`;
+      }
+
+      const user = window.localStorage.getItem('user') ?? window.sessionStorage.getItem('user');
+      if (user && (config.method === 'get' || !config.method)) {
+        try {
+          const userObj = JSON.parse(user);
+          if (userObj?.id) {
+            config.params = config.params || {};
+            if (typeof config.params === 'object' && !Array.isArray(config.params)) {
+              config.params.user_id = String(userObj.id);
+            }
           }
+        } catch (error) {
+          // eslint-disable-next-line no-console
+          console.error('[Axios] Error parsing stored user:', error);
         }
-      } catch (e) {
-        console.error('[Axios] Error parsing user from localStorage:', e);
       }
     }
-    
+
     return config;
   },
   (error) => {
@@ -52,12 +48,14 @@ axiosInstance.interceptors.response.use(
   (error) => {
     if (error.response?.status === 401) {
       // Unauthorized - clear storage and redirect to login
-      localStorage.clear();
-      window.location.href = '/login';
+      if (typeof window !== 'undefined') {
+        window.localStorage.clear();
+        window.sessionStorage.clear();
+        window.location.replace('/');
+      }
     }
     return Promise.reject(error);
   }
 );
 
 export default axiosInstance;
-

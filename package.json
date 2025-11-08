@@ -11,6 +11,7 @@
     "dev:frontend": "cd frontend && npm start",
     "build": "cd frontend && npm run build",
     "install:all": "npm install && cd frontend && npm install",
+    "test:register-login": "node scripts/test-register-login.js",
     "clean": "./kill-ports.sh"
   },
   "keywords": [],
