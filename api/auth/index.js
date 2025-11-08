@@ -37,18 +37,25 @@ const supabase = supabaseUrl && supabaseKey ? createClient(supabaseUrl, supabase
 
 const { handleCORS, createResponse, parseBody, getQueryParams } = require('../../lib/handler');
 
+function log(...args) {
+  console.log('[Auth]', ...args);
+}
+
 module.exports = async (req) => {
   const startTime = Date.now();
-  console.log(`[${new Date().toISOString()}] Auth request started: ${req.method} ${req.url}`);
+  log('request', { method: req.method, url: req.url });
   
   const corsResponse = handleCORS(req);
   if (corsResponse) return corsResponse;
 
   // Check if Supabase is configured
   if (!supabase) {
-    console.error('Supabase client not initialized - missing environment variables');
-    console.error('SUPABASE_URL:', supabaseUrl ? 'Set (length: ' + supabaseUrl.length + ')' : 'Missing');
-    console.error('SUPABASE_KEY:', supabaseKey ? 'Set (length: ' + supabaseKey.length + ')' : 'Missing');
+    log('missing env', {
+      hasUrl: Boolean(supabaseUrl),
+      urlLength: supabaseUrl ? supabaseUrl.length : 0,
+      hasKey: Boolean(supabaseKey),
+      keyLength: supabaseKey ? supabaseKey.length : 0,
+    });
     return createResponse({ 
       message: 'Server configuration error', 
       error: 'Database connection not configured' 
@@ -64,7 +71,7 @@ module.exports = async (req) => {
     const body = await parseBody(req);
     const queryParams = getQueryParams(req);
     const action = queryParams.action || body.action || 'login';
-    console.log(`[${Date.now() - parseStart}ms] Parsed request, action: ${action}`);
+    log('parsed', { durationMs: Date.now() - parseStart, action });
 
     // Route based on action
     const handlerStart = Date.now();
@@ -82,10 +89,10 @@ module.exports = async (req) => {
       default:
         response = createResponse({ message: 'Invalid action' }, 400);
     }
-    console.log(`[${Date.now() - handlerStart}ms] Handler completed, total: ${Date.now() - startTime}ms`);
+    log('completed', { handlerMs: Date.now() - handlerStart, totalMs: Date.now() - startTime });
     return response;
   } catch (error) {
-    console.error(`[${Date.now() - startTime}ms] Auth error:`, error);
+    log('error', { durationMs: Date.now() - startTime, message: error?.message, stack: error?.stack });
     return createResponse({ message: 'An error occurred', error: error.message }, 500);
   }
 };
@@ -105,16 +112,15 @@ async function handleLogin(body) {
       hasUrl: Boolean(supabaseUrl),
       keyLength: supabaseKey ? supabaseKey.length : 0,
     };
-    console.log('[Login] Supabase config summary:', configSummary);
+    log('login:config', configSummary);
 
     const healthStatus = await checkSupabaseHealth();
-    console.log('[Login] Supabase health check:', healthStatus);
+    log('login:health', healthStatus);
     if (!healthStatus.ok) {
       return createResponse({ message: 'Supabase health check failed', error: healthStatus.error }, 503);
     }
 
-    console.log(`[Login] Starting login for user: ${trimmedUsername}`);
-    console.log(`[Login] Supabase URL: ${supabaseUrl ? supabaseUrl.substring(0, 30) + '...' : 'MISSING'}`);
+    log('login:start', { user: trimmedUsername });
     const queryStart = Date.now();
     
     // Use direct REST API call instead of JS client for better performance in serverless
@@ -157,10 +163,10 @@ async function handleLogin(body) {
     let users;
     try {
       users = await fetchPromise;
-      console.log(`[Login] Query completed in ${Date.now() - queryStart}ms`);
+      log('login:rest:success', { durationMs: Date.now() - queryStart, count: users?.length || 0 });
     } catch (fetchError) {
       const elapsed = Date.now() - queryStart;
-      console.error(`[Login] REST API failed after ${elapsed}ms:`, fetchError.message);
+      log('login:rest:error', { durationMs: elapsed, message: fetchError?.message });
 
       const fallbackResult = await queryWithSupabaseClient(trimmedUsername, queryStart);
       if (!fallbackResult.ok) {
@@ -185,9 +191,9 @@ async function handleLogin(body) {
     let isMatch;
     try {
       isMatch = await Promise.race([comparePromise, compareTimeout]);
-      console.log(`[Login] Password comparison completed in ${Date.now() - compareStart}ms`);
+      log('login:password:success', { durationMs: Date.now() - compareStart });
     } catch (compareError) {
-      console.error(`[Login] Password comparison timed out after ${Date.now() - compareStart}ms`);
+      log('login:password:error', { durationMs: Date.now() - compareStart, message: compareError?.message });
       return createResponse({ message: 'Request timeout - password verification issue', error: compareError.message }, 504);
     }
 
@@ -202,7 +208,7 @@ async function handleLogin(body) {
       return createResponse({ message: 'Invalid credentials' }, 401);
     }
   } catch (error) {
-    console.error('Login handler error:', error);
+    log('login:error', { message: error?.message, stack: error?.stack });
     return createResponse({ message: 'Login failed', error: error.message }, 500);
   }
 }
@@ -226,10 +232,10 @@ async function queryWithSupabaseClient(trimmedUsername, queryStart) {
     }
 
     const users = queryResult && queryResult.data ? [queryResult.data] : [];
-    console.log(`[Login] Supabase client query completed in ${Date.now() - queryStart}ms`);
+    log('login:client:success', { durationMs: Date.now() - queryStart, found: users.length });
     return { ok: true, users };
   } catch (fallbackError) {
-    console.error('[Login] Supabase client fallback failed:', fallbackError.message);
+    log('login:client:error', { message: fallbackError?.message });
     return {
       ok: false,
       response: createResponse({
@@ -294,7 +300,7 @@ async function handleRegister(body) {
     const { data: existingUsers, error: checkError } = await Promise.race([checkPromise, checkTimeout]);
 
     if (checkError) {
-      console.error('Database check error:', checkError);
+      log('register:check:error', { message: checkError?.message, code: checkError?.code });
       return createResponse({ message: 'Database error', error: checkError.message }, 500);
     }
 
@@ -323,13 +329,13 @@ async function handleRegister(body) {
     const { data: newUser, error: insertError } = await Promise.race([insertPromise, insertTimeout]);
 
     if (insertError) {
-      console.error('Insert error:', insertError);
+      log('register:insert:error', { message: insertError?.message, code: insertError?.code });
       return createResponse({ message: 'Registration failed', error: insertError.message }, 500);
     }
 
     return createResponse({ message: 'Registration successful!', success: true }, 200);
   } catch (error) {
-    console.error('Register handler error:', error);
+    log('register:error', { message: error?.message, stack: error?.stack });
     return createResponse({ message: 'Registration failed', error: error.message }, 500);
   }
 }
