@@ -1,577 +1,549 @@
-import React, { useEffect, useState } from 'react';
-import type { IconType } from 'react-icons';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { 
-  FaBook, 
-  FaTasks, 
-  FaSmile, 
-  FaStickyNote, 
-  FaClipboardList,
-  FaArrowRight,
-  FaStar,
-  FaShieldAlt,
-  FaMobileAlt,
-  FaCloud,
-  FaHeart,
-  FaQuoteLeft,
-  FaCheckCircle
-} from 'react-icons/fa';
+import { motion, useReducedMotion } from 'framer-motion';
+import {
+  FiArrowRight,
+  FiCalendar,
+  FiClock,
+  FiHeart,
+  FiShield,
+  FiTrendingUp,
+  FiUsers,
+} from 'react-icons/fi';
+import { FaQuoteLeft } from 'react-icons/fa';
 import AIChatWidget from './AIChatWidget';
+import cn from '../utils/cn';
 
-interface Feature {
-  icon: IconType;
+const fadeUp = {
+  hidden: { opacity: 0, y: 32 },
+  visible: { opacity: 1, y: 0 },
+};
+
+const staggerParent = {
+  hidden: {},
+  visible: {
+    transition: {
+      staggerChildren: 0.12,
+      delayChildren: 0.15,
+    },
+  },
+};
+
+type Feature = {
+  id: string;
   title: string;
   description: string;
-  color: string;
-}
+  icon: React.ReactNode;
+};
 
-interface Testimonial {
+type Spotlight = {
+  name: string;
+  major: string;
+  story: string;
+  stats: string;
+};
+
+type JourneyEvent = {
+  time: string;
+  title: string;
+  description: string;
+};
+
+type Testimonial = {
+  quote: string;
   name: string;
   role: string;
-  content: string;
-  rating: number;
-}
+};
 
 const LandingPage: React.FC = () => {
   const navigate = useNavigate();
-  const [isNotificationVisible, setIsNotificationVisible] = useState<boolean>(true);
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState<boolean>(false);
+  const prefersReducedMotion = useReducedMotion();
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   useEffect(() => {
     document.body.classList.add('landing-page-active');
     document.documentElement.classList.add('landing-page-active');
-    
-    const layoutElements = document.querySelectorAll('.layout, .sidebar, .main-content');
-    layoutElements.forEach(element => {
-      (element as HTMLElement).style.display = 'none';
-    });
-    
-    window.scrollTo(0, 0);
-    document.documentElement.scrollTop = 0;
-    document.body.scrollTop = 0;
-    
-    const contentElements = document.querySelectorAll('.content, .main-content, .page-content');
-    contentElements.forEach(element => {
-      if ('scrollTo' in element && typeof (element as any).scrollTo === 'function') {
-        (element as any).scrollTo(0, 0);
-      } else {
-        (element as HTMLElement).scrollTop = 0;
-      }
-    });
-
-    const setupScrollAnimations = () => {
-      const revealElements = document.querySelectorAll('[data-scroll-reveal]');
-      const progressBar = document.querySelector('.scroll-progress-bar') as HTMLElement;
-      
-      const handleScroll = (): void => {
-        if (progressBar) {
-          const scrollTop = window.pageYOffset;
-          const docHeight = document.documentElement.scrollHeight - window.innerHeight;
-          const scrollPercent = (scrollTop / docHeight) * 100;
-          progressBar.style.width = scrollPercent + '%';
-        }
-        
-        revealElements.forEach(element => {
-          const elementTop = element.getBoundingClientRect().top;
-          const elementVisible = 200;
-          
-          if (elementTop < window.innerHeight - elementVisible) {
-            element.classList.add('opacity-100', 'translate-y-0');
-          }
-        });
-      };
-      
-      setTimeout(() => {
-        window.addEventListener('scroll', handleScroll);
-        handleScroll();
-        setTimeout(handleScroll, 100);
-      }, 100);
-      
-      return () => window.removeEventListener('scroll', handleScroll);
-    };
-
-    const cleanupScrollAnimations = setupScrollAnimations();
 
     return () => {
       document.body.classList.remove('landing-page-active');
       document.documentElement.classList.remove('landing-page-active');
-      
-      layoutElements.forEach(element => {
-        (element as HTMLElement).style.display = '';
-      });
-      
-      cleanupScrollAnimations();
     };
   }, []);
 
-  const handleGetStarted = (): void => {
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, []);
+
+  const features = useMemo<Feature[]>(
+    () => [
+      {
+        id: 'mood',
+        title: 'Mood radar',
+        description: 'Track emotional patterns and receive AI nudges when stress spikes before exams.',
+        icon: <FiHeart className="h-6 w-6" />,
+      },
+      {
+        id: 'planner',
+        title: 'Adaptive planner',
+        description: 'Sync class timetables with personal tasks to build a balanced study routine.',
+        icon: <FiCalendar className="h-6 w-6" />,
+      },
+      {
+        id: 'focus',
+        title: 'Focus timer',
+        description: 'Layered Pomodoro sessions tied to your diary entries for better accountability.',
+        icon: <FiClock className="h-6 w-6" />,
+      },
+      {
+        id: 'insights',
+        title: 'Insight engine',
+        description: 'AI-generated reflections connecting moods, study habits, and wellness goals.',
+        icon: <FiTrendingUp className="h-6 w-6" />,
+      },
+      {
+        id: 'community',
+        title: 'Mentor snippets',
+        description: 'Anonymous campus mentors share weekly prompts to keep you inspired.',
+        icon: <FiUsers className="h-6 w-6" />,
+      },
+      {
+        id: 'privacy',
+        title: 'Private vault',
+        description: 'Multi-layer encryption and passphrase lock so your stories stay yours.',
+        icon: <FiShield className="h-6 w-6" />,
+      },
+    ],
+    [],
+  );
+
+  const spotlights = useMemo<Spotlight[]>(
+    () => [
+      {
+        name: 'Zuri',
+        major: 'Psychology senior',
+        story: 'Uses Digital Diary to log moods between therapy sessions and schedule group study.',
+        stats: '+18% weekly focus',
+      },
+      {
+        name: 'Amaan',
+        major: 'Computer science sophomore',
+        story: 'Builds sprint retros in minutes and syncs tasks with lab partners after lectures.',
+        stats: '3x faster planning',
+      },
+      {
+        name: 'Lina',
+        major: 'Design freshman',
+        story: 'Captures creative sparks on mobile, then expands reflections during studio nights.',
+        stats: 'Daily streak 124',
+      },
+    ],
+    [],
+  );
+
+  const journey = useMemo<JourneyEvent[]>(
+    () => [
+      {
+        time: '08:00',
+        title: 'Morning clarity',
+        description: 'Capture overnight ideas, align priorities with your calendar.',
+      },
+      {
+        time: '12:30',
+        title: 'Campus check-in',
+        description: 'Log midday energy, tag group projects, share a gratitude snapshot.',
+      },
+      {
+        time: '17:45',
+        title: 'Studio reset',
+        description: 'Review tasks, attach lecture notes, track focus timer stats.',
+      },
+      {
+        time: '22:15',
+        title: 'Night reflection',
+        description: 'Summarise highs & lows, get AI prompts for tomorrow’s mindset.',
+      },
+    ],
+    [],
+  );
+
+  const testimonials = useMemo<Testimonial[]>(
+    () => [
+      {
+        quote: 'Digital Diary feels like the wellness desk on campus—always open, always private.',
+        name: 'Nura Abebe',
+        role: 'Residence advisor, Addis Ababa University',
+      },
+      {
+        quote: 'I finally track patterns between mood, sleep, and grades without another spreadsheet.',
+        name: 'Ravi Desai',
+        role: 'Engineering student, UBC',
+      },
+      {
+        quote: 'Our study group syncs tasks and reflections in one feed. It keeps us accountable.',
+        name: 'Camille Laurent',
+        role: 'MBA candidate, ESCP',
+      },
+    ],
+    [],
+  );
+
+  const handleNavigateLogin = () => {
     navigate('/login');
   };
 
-  const features: Feature[] = [
-    {
-      icon: FaBook,
-      title: 'Digital Diary',
-      description: 'Capture your thoughts, memories, and experiences in a beautiful digital format.',
-      color: 'from-blue-500 to-purple-600'
-    },
-    {
-      icon: FaTasks,
-      title: 'Task Management',
-      description: 'Organize your daily tasks and stay productive with our intuitive task manager.',
-      color: 'from-green-500 to-teal-600'
-    },
-    {
-      icon: FaSmile,
-      title: 'Mood Tracking',
-      description: 'Track your emotional well-being and understand your mood patterns over time.',
-      color: 'from-yellow-500 to-orange-600'
-    },
-    {
-      icon: FaStickyNote,
-      title: 'Quick Notes',
-      description: 'Jot down ideas, reminders, and important information instantly.',
-      color: 'from-pink-500 to-rose-600'
-    },
-    {
-      icon: FaClipboardList,
-      title: 'To-Do Lists',
-      description: 'Create and manage your to-do lists with ease and efficiency.',
-      color: 'from-indigo-500 to-blue-600'
-    },
-    {
-      icon: FaHeart,
-      title: 'Personal Growth',
-      description: 'Reflect on your journey and track your personal development progress.',
-      color: 'from-red-500 to-pink-600'
-    }
-  ];
-
-  const testimonials: Testimonial[] = [
-    {
-      name: 'Sarah Johnson',
-      role: 'Student',
-      content: 'This digital diary has transformed how I organize my thoughts and track my daily progress. The mood tracking feature is incredibly insightful!',
-      rating: 5
-    },
-    {
-      name: 'Michael Chen',
-      role: 'Professional',
-      content: 'The task management system is perfect for my busy schedule. I love how everything is integrated in one place.',
-      rating: 5
-    },
-    {
-      name: 'Emily Rodriguez',
-      role: 'Writer',
-      content: 'As a writer, I need a reliable place to store my ideas and thoughts. This platform has become my digital sanctuary.',
-      rating: 5
-    }
-  ];
-
-  const benefits: string[] = [
-    'Secure cloud storage',
-    'Cross-platform access',
-    'Beautiful, intuitive design',
-    'Privacy-focused approach',
-    'Regular backups',
-    'Mobile-friendly interface'
-  ];
+  const HeroMotion = prefersReducedMotion ? React.Fragment : motion.div;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50">
-      {/* Scroll Progress Indicator */}
-      <div className="fixed top-0 left-0 right-0 h-1 bg-gray-200 z-50">
-        <div className="scroll-progress-bar h-full bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 transition-all duration-150"></div>
+    <div className="relative min-h-screen overflow-hidden bg-surface text-foreground">
+      <a
+        href="#main"
+        className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50 focus:rounded-full focus:bg-surface focus:px-4 focus:py-2 focus:outline focus:outline-2 focus:outline-offset-2 focus:outline-accent"
+      >
+        Skip to main content
+      </a>
+      <div className="pointer-events-none absolute inset-0 -z-20 overflow-hidden" aria-hidden="true">
+        <div className="absolute -top-32 left-1/2 h-[32rem] w-[32rem] -translate-x-1/2 rounded-full bg-gradient-to-br from-accent/25 via-foreground/5 to-transparent blur-[160px]" />
+        <div className="absolute bottom-0 right-[-12%] h-[26rem] w-[26rem] rounded-full bg-gradient-to-br from-[#ff7aa8]/20 via-[#4de1ff]/30 to-transparent blur-[120px]" />
       </div>
-      
-      {/* Notification Banner */}
-      {isNotificationVisible && (
-        <div className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white py-3 px-4 relative z-40">
-          <div className="max-w-7xl mx-auto flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <span className="text-2xl">🤖</span>
-              <span className="text-sm md:text-base">
-                <strong>Meet Samiya AI:</strong> Your personal wellness assistant is now live!
-              </span>
-            </div>
-            <button 
-              className="text-white hover:bg-white/20 p-1 rounded transition-colors"
-              aria-label="Close notification"
-              onClick={() => setIsNotificationVisible(false)}
-            >
-              <span className="text-xl">×</span>
-            </button>
-          </div>
-        </div>
-      )}
 
-      {/* Navigation */}
-      <nav className={`sticky top-0 z-40 bg-white/80 backdrop-blur-md shadow-sm border-b border-gray-200 ${!isNotificationVisible ? 'top-0' : ''}`}>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            <div 
-              className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity"
-              onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+      <header className="sticky top-0 z-40 border-b border-foreground/5 bg-surface/70 backdrop-blur-xl">
+        <div className="mx-auto flex h-20 w-full max-w-6xl items-center justify-between px-5 md:px-10">
+          <button
+            type="button"
+            onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+            className="group flex items-center gap-4 rounded-full border border-foreground/5 bg-surface/80 px-4 py-2 text-left shadow-card transition hover:border-accent/40 focus-outline"
+          >
+            <span className="flex h-11 w-11 items-center justify-center rounded-2xl border border-accent/20 bg-surface/95 text-lg font-semibold text-accent shadow-soft transition group-hover:scale-105">
+              DD
+            </span>
+            <span>
+              <p className="text-xs uppercase tracking-[0.35em] text-foreground/70">Digital Diary</p>
+              <p className="text-sm font-semibold text-foreground/90">Neuro-adaptive journaling</p>
+            </span>
+          </button>
+
+          <nav aria-label="Primary" className="hidden items-center gap-8 md:flex">
+            <a href="#features" className="text-sm font-medium text-foreground/70 transition hover:text-accent focus-outline">
+              Features
+            </a>
+            <a href="#timeline" className="text-sm font-medium text-foreground/70 transition hover:text-accent focus-outline">
+              Student day
+            </a>
+            <a href="#testimonials" className="text-sm font-medium text-foreground/70 transition hover:text-accent focus-outline">
+              Voices
+            </a>
+            <button
+              type="button"
+              onClick={handleNavigateLogin}
+              className="group inline-flex items-center gap-2 rounded-full border border-accent/30 bg-accent px-5 py-2 text-sm font-semibold text-foreground-invert shadow-card transition hover:-translate-y-0.5 hover:border-accent focus-outline"
             >
-              <div className="w-10 h-10 bg-gradient-to-r from-indigo-600 to-purple-600 rounded-lg flex items-center justify-center text-white">
-                <FaBook />
-              </div>
-              <div className="flex flex-col">
-                <span className="text-lg font-bold text-gray-800">Digital</span>
-                <span className="text-lg font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">Diary</span>
-              </div>
-            </div>
-            
-            <div className="hidden md:flex items-center gap-8">
-              <a href="#features" className="text-gray-700 hover:text-indigo-600 font-medium transition-colors">Features</a>
-              <a href="#benefits" className="text-gray-700 hover:text-indigo-600 font-medium transition-colors">Benefits</a>
-              <a href="#testimonials" className="text-gray-700 hover:text-indigo-600 font-medium transition-colors">Reviews</a>
-              <a href="#contact" className="text-gray-700 hover:text-indigo-600 font-medium transition-colors">Contact</a>
-              <button
-                onClick={handleGetStarted}
-                className="px-6 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-lg font-semibold hover:shadow-lg transition-all hover:scale-105 flex items-center gap-2"
-              >
-                <span>Get Started Free</span>
-                <FaArrowRight />
-              </button>
-            </div>
-            
-            <button 
-              className={`md:hidden p-2 ${isMobileMenuOpen ? 'text-indigo-600' : 'text-gray-700'}`}
-              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-              aria-label="Toggle menu"
-            >
-              <div className="w-6 h-6 flex flex-col justify-center gap-1.5">
-                <span className={`block h-0.5 bg-current transition-all ${isMobileMenuOpen ? 'rotate-45 translate-y-2' : ''}`}></span>
-                <span className={`block h-0.5 bg-current transition-all ${isMobileMenuOpen ? 'opacity-0' : ''}`}></span>
-                <span className={`block h-0.5 bg-current transition-all ${isMobileMenuOpen ? '-rotate-45 -translate-y-2' : ''}`}></span>
-              </div>
+              Sign in
+              <FiArrowRight className="transition-transform group-hover:translate-x-1" />
             </button>
-          </div>
+          </nav>
+
+          <button
+            type="button"
+            className="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-foreground/10 text-foreground/80 transition hover:border-accent md:hidden focus-outline"
+            onClick={() => setIsMenuOpen((prev) => !prev)}
+            aria-expanded={isMenuOpen}
+            aria-controls="mobile-menu"
+          >
+            <span className="sr-only">Toggle navigation</span>
+            <div className="flex flex-col items-center justify-center space-y-1.5">
+              <span className={cn('h-0.5 w-5 rounded-full bg-current transition', isMenuOpen && 'translate-y-1.5 rotate-45')} />
+              <span className={cn('h-0.5 w-5 rounded-full bg-current transition', isMenuOpen && 'opacity-0')} />
+              <span className={cn('h-0.5 w-5 rounded-full bg-current transition', isMenuOpen && '-translate-y-1.5 -rotate-45')} />
+            </div>
+          </button>
         </div>
-        
-        {/* Mobile Menu */}
-        {isMobileMenuOpen && (
-          <div className="md:hidden border-t border-gray-200 bg-white">
-            <div className="px-4 py-4 space-y-3">
-              <a href="#features" className="block text-gray-700 hover:text-indigo-600 font-medium">Features</a>
-              <a href="#benefits" className="block text-gray-700 hover:text-indigo-600 font-medium">Benefits</a>
-              <a href="#testimonials" className="block text-gray-700 hover:text-indigo-600 font-medium">Reviews</a>
-              <a href="#contact" className="block text-gray-700 hover:text-indigo-600 font-medium">Contact</a>
-              <button
-                onClick={handleGetStarted}
-                className="w-full px-6 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-lg font-semibold"
+
+        {isMenuOpen && (
+          <div id="mobile-menu" className="border-t border-foreground/10 bg-surface/95 px-5 pb-5 pt-4 md:hidden">
+            <div className="flex flex-col gap-3">
+              <a
+                href="#features"
+                onClick={() => setIsMenuOpen(false)}
+                className="rounded-xl border border-transparent px-4 py-3 text-sm font-semibold text-foreground/80 transition hover:border-accent/40 focus-outline"
               >
-                Get Started Free
+                Features
+              </a>
+              <a
+                href="#timeline"
+                onClick={() => setIsMenuOpen(false)}
+                className="rounded-xl border border-transparent px-4 py-3 text-sm font-semibold text-foreground/80 transition hover:border-accent/40 focus-outline"
+              >
+                Student day
+              </a>
+              <a
+                href="#testimonials"
+                onClick={() => setIsMenuOpen(false)}
+                className="rounded-xl border border-transparent px-4 py-3 text-sm font-semibold text-foreground/80 transition hover:border-accent/40 focus-outline"
+              >
+                Voices
+              </a>
+              <button
+                type="button"
+                onClick={() => {
+                  setIsMenuOpen(false);
+                  handleNavigateLogin();
+                }}
+                className="inline-flex items-center justify-center gap-2 rounded-xl border border-accent/30 bg-accent px-4 py-3 text-sm font-semibold text-foreground-invert shadow-card transition hover:-translate-y-0.5 focus-outline"
+              >
+                Start journaling
+                <FiArrowRight />
               </button>
             </div>
           </div>
         )}
-      </nav>
+      </header>
 
-      {/* Hero Section */}
-      <section className={`relative overflow-hidden pt-16 pb-24 lg:pt-24 lg:pb-32 ${!isNotificationVisible ? 'pt-16 lg:pt-24' : ''}`}>
-        {/* Animated background elements */}
-        <div className="absolute inset-0 overflow-hidden">
-          <div className="absolute top-0 left-1/4 w-96 h-96 bg-purple-300/20 rounded-full blur-3xl animate-pulse"></div>
-          <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-pink-300/20 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }}></div>
-          <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-indigo-300/20 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '0.5s' }}></div>
-        </div>
-        
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid lg:grid-cols-2 gap-12 items-center">
-            {/* Left Column - Text Content */}
-            <div className="text-center lg:text-left space-y-8" data-scroll-reveal>
-              {/* Badge */}
-              <div className="inline-flex items-center gap-2 px-4 py-2 bg-white/80 backdrop-blur-sm rounded-full border border-purple-200 shadow-sm">
-                <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
-                <span className="text-sm font-semibold text-gray-700">AI-Powered Wellness Assistant</span>
-              </div>
-              
-              {/* Main Heading */}
-              <div className="space-y-4">
-                <h1 className="text-5xl md:text-6xl lg:text-7xl font-extrabold leading-tight">
-                  <span className="block text-gray-900">Your Digital</span>
-                  <span className="block bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 bg-clip-text text-transparent">
-                    Life Companion
-                  </span>
-                </h1>
-                <p className="text-xl md:text-2xl text-gray-600 leading-relaxed max-w-xl mx-auto lg:mx-0">
-                  Capture memories, organize tasks, track moods, and grow with AI-powered insights—all in one beautiful platform.
-                </p>
-              </div>
-              
-              {/* CTA Buttons */}
-              <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
-                <button 
-                  className="group px-8 py-4 bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 text-white rounded-xl font-bold text-lg shadow-xl hover:shadow-2xl transition-all hover:scale-105 flex items-center justify-center gap-3 relative overflow-hidden"
-                  onClick={handleGetStarted}
-                >
-                  <span className="relative z-10 flex items-center gap-2">
-                    <span>Get Started Free</span>
-                    <FaArrowRight className="group-hover:translate-x-1 transition-transform" />
-                  </span>
-                  <div className="absolute inset-0 bg-gradient-to-r from-indigo-700 via-purple-700 to-pink-700 opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                </button>
-                <button 
-                  className="px-8 py-4 bg-white text-gray-700 rounded-xl font-semibold text-lg shadow-lg hover:shadow-xl transition-all hover:scale-105 border-2 border-gray-200 flex items-center justify-center gap-2"
-                  onClick={() => {
-                    document.getElementById('features')?.scrollIntoView({ behavior: 'smooth' });
-                  }}
-                >
-                  <FaBook />
-                  <span>Explore Features</span>
-                </button>
-              </div>
-              
-              {/* Trust Indicators */}
-              <div className="flex flex-wrap items-center gap-6 justify-center lg:justify-start pt-4">
-                <div className="flex items-center gap-2">
-                  <FaCheckCircle className="text-green-500 text-xl" />
-                  <span className="text-sm text-gray-600">No credit card required</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <FaShieldAlt className="text-indigo-500 text-xl" />
-                  <span className="text-sm text-gray-600">Secure & Private</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <FaStar className="text-yellow-500 text-xl" />
-                  <span className="text-sm text-gray-600">Free Forever</span>
-                </div>
-              </div>
+      <main id="main" className="relative z-10 mx-auto flex w-full max-w-6xl flex-col gap-24 px-5 pb-24 pt-16 md:px-10 md:pb-32 md:pt-20">
+        <HeroMotion
+          className="grid gap-16 md:grid-cols-[1fr_minmax(0,420px)] md:items-center"
+          {...(prefersReducedMotion
+            ? {}
+            : {
+                initial: 'hidden',
+                animate: 'visible',
+                variants: fadeUp,
+                transition: { duration: 0.65 },
+              })}
+        >
+          <section className="flex flex-col gap-8">
+            <div className="inline-flex w-fit items-center gap-3 rounded-full border border-accent/20 bg-accent/10 px-4 py-2 text-xs font-semibold uppercase tracking-[0.35em] text-accent">
+              <span className="flex h-2 w-2 items-center justify-center rounded-full bg-accent" />
+              Campus edition
             </div>
-            
-            {/* Right Column - Floating Diary Visual */}
-            <div className="relative hidden lg:flex items-center justify-center" data-scroll-reveal>
-              <div className="relative">
-                {/* Main Diary Book */}
-                <div className="relative w-80 h-96 transform hover:scale-105 transition-transform duration-500 animate-float">
-                  {/* Diary Book */}
-                  <div className="relative w-full h-full bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-600 rounded-2xl shadow-2xl transform rotate-3">
-                    {/* Book Cover Pattern */}
-                    <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent rounded-2xl"></div>
-                    <div className="absolute top-0 left-0 right-0 h-16 bg-white/20 rounded-t-2xl flex items-center justify-center">
-                      <div className="w-12 h-12 bg-white/30 rounded-lg flex items-center justify-center">
-                        <FaBook className="text-white text-2xl" />
-                      </div>
-                    </div>
-                    
-                    {/* Pages Effect */}
-                    <div className="absolute top-20 left-0 right-0 bottom-0 bg-white/95 rounded-b-2xl p-6 space-y-3">
-                      <div className="h-2 bg-gray-200 rounded w-3/4"></div>
-                      <div className="h-2 bg-gray-200 rounded w-full"></div>
-                      <div className="h-2 bg-gray-200 rounded w-5/6"></div>
-                      <div className="h-2 bg-indigo-200 rounded w-2/3 mt-4"></div>
-                      <div className="h-2 bg-purple-200 rounded w-4/5"></div>
-                      <div className="h-2 bg-pink-200 rounded w-3/4"></div>
-                      <div className="h-2 bg-gray-200 rounded w-full mt-4"></div>
-                      <div className="h-2 bg-gray-200 rounded w-5/6"></div>
-                      <div className="h-2 bg-gray-200 rounded w-4/5"></div>
-                    </div>
-                    
-                    {/* Binding */}
-                    <div className="absolute left-0 top-0 bottom-0 w-2 bg-gradient-to-b from-indigo-800 via-purple-800 to-pink-800 rounded-l-2xl"></div>
-                    
-                    {/* Decorative Elements */}
-                    <div className="absolute -top-4 -right-4 w-20 h-20 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-full flex items-center justify-center shadow-xl animate-bounce-slow">
-                      <FaStar className="text-white text-2xl" />
-                    </div>
-                    
-                    <div className="absolute -bottom-6 -left-6 w-16 h-16 bg-gradient-to-br from-green-400 to-emerald-500 rounded-full flex items-center justify-center shadow-xl animate-bounce-slow" style={{ animationDelay: '0.5s' }}>
-                      <FaHeart className="text-white text-xl" />
-                    </div>
-                  </div>
-                  
-                  {/* Floating Particles */}
-                  <div className="absolute -top-8 left-1/4 w-3 h-3 bg-purple-400 rounded-full opacity-60 animate-pulse"></div>
-                  <div className="absolute top-1/4 -right-8 w-2 h-2 bg-pink-400 rounded-full opacity-60 animate-pulse" style={{ animationDelay: '0.3s' }}></div>
-                  <div className="absolute bottom-1/4 -left-4 w-2.5 h-2.5 bg-indigo-400 rounded-full opacity-60 animate-pulse" style={{ animationDelay: '0.6s' }}></div>
-                </div>
-                
-                {/* Floating AI Badge */}
-                <div className="absolute -top-4 -right-8 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-2xl p-4 shadow-2xl transform hover:scale-110 transition-all animate-bounce-slow z-10">
-                  <div className="flex items-center gap-2">
-                    <span className="text-2xl">🤖</span>
-                    <div>
-                      <div className="font-bold text-sm">Samiya AI</div>
-                      <div className="text-xs opacity-90">Your wellness companion</div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Features Section */}
-      <section id="features" className="py-20 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16" data-scroll-reveal>
-            <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">Everything You Need</h2>
-            <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-              A comprehensive suite of tools designed to help you organize, reflect, and grow.
-            </p>
-          </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {features.map((feature, index) => (
-              <div
-                key={index}
-                className="bg-white p-8 rounded-2xl shadow-lg hover:shadow-xl transition-all hover:scale-105 border border-gray-100"
-                data-scroll-reveal
-              >
-                <div className={`w-16 h-16 bg-gradient-to-r ${feature.color} rounded-xl flex items-center justify-center mb-6 text-white text-2xl`}>
-                  <feature.icon />
-                </div>
-                <h3 className="text-xl font-bold text-gray-900 mb-3">{feature.title}</h3>
-                <p className="text-gray-600">{feature.description}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Benefits Section */}
-      <section id="benefits" className="py-20 bg-gradient-to-br from-gray-50 to-gray-100">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid md:grid-cols-2 gap-12 items-center">
-            <div data-scroll-reveal>
-              <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">Why Choose Digital Diary?</h2>
-              <p className="text-xl text-gray-600 mb-8">
-                We've built a platform that prioritizes your privacy, security, and user experience above all else.
+            <div className="space-y-6">
+              <h1 className="font-heading text-[clamp(2.8rem,2.1rem+2.2vw,4.6rem)] leading-[1.05] text-foreground">
+                Your future memories deserve a smarter campus journal.
+              </h1>
+              <p className="max-w-xl text-lg leading-relaxed text-foreground/70">
+                Digital Diary helps students capture moods, class notes, and life milestones in one encrypted hub. Stay
+                grounded, organised, and ready for every exam or adventure.
               </p>
-              <div className="space-y-4">
-                {benefits.map((benefit, index) => (
-                  <div key={index} className="flex items-center gap-3" data-scroll-reveal>
-                    <FaCheckCircle className="text-green-500 text-xl flex-shrink-0" />
-                    <span className="text-gray-700 font-medium">{benefit}</span>
+            </div>
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+              <button
+                type="button"
+                onClick={handleNavigateLogin}
+                className="group inline-flex items-center justify-center gap-3 rounded-full border border-accent/40 bg-gradient-to-r from-[#5b5bff] via-[#7b7cff] to-[#4de1ff] px-7 py-3 text-base font-semibold text-foreground-invert shadow-elevated transition hover:-translate-y-0.5 focus-outline"
+              >
+                Start journaling
+                <FiArrowRight className="transition-transform group-hover:translate-x-1.5" />
+              </button>
+              <button
+                type="button"
+                onClick={() => document.getElementById('features')?.scrollIntoView({ behavior: 'smooth' })}
+                className="inline-flex items-center justify-center rounded-full border border-foreground/15 bg-surface px-6 py-3 text-base font-semibold text-foreground/80 shadow-soft transition hover:border-accent/40 focus-outline"
+              >
+                Explore features
+              </button>
+            </div>
+            <div className="grid gap-4 sm:grid-cols-3">
+              {[
+                { label: 'Active streaks', value: '18,940+' },
+                { label: 'Campuses represented', value: '220' },
+                { label: 'Private entries captured', value: '2.1M' },
+              ].map((metric) => (
+                <div
+                  key={metric.label}
+                  className="rounded-2xl border border-foreground/10 bg-surface/60 px-5 py-4 text-sm text-foreground/70 shadow-inner backdrop-blur-xl"
+                >
+                  <p className="text-xs uppercase tracking-[0.35em] text-foreground/50">{metric.label}</p>
+                  <p className="mt-2 text-xl font-semibold text-foreground">{metric.value}</p>
+                </div>
+              ))}
+            </div>
+          </section>
+          <section
+            className={cn(
+              'relative flex flex-col gap-5 rounded-3xl border border-accent/10 bg-surface/70 p-6 shadow-glass backdrop-blur-[36px]',
+              'before:absolute before:inset-0 before:-z-10 before:rounded-3xl before:bg-gradient-to-br before:from-[#5b5bff]/15 before:to-transparent',
+            )}
+          >
+            <div className="space-y-4">
+              <p className="text-xs uppercase tracking-[0.35em] text-foreground/60">Student spotlights</p>
+              <div className="grid gap-4">
+                {spotlights.map((spotlight) => (
+                  <div
+                    key={spotlight.name}
+                    className="rounded-2xl border border-foreground/10 bg-surface/80 p-4 shadow-soft transition hover:border-accent/30"
+                  >
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm font-semibold text-foreground">{spotlight.name}</p>
+                        <p className="text-xs text-foreground/60">{spotlight.major}</p>
+                      </div>
+                      <span className="rounded-full border border-accent/40 bg-accent/20 px-3 py-1 text-xs font-semibold text-accent">
+                        {spotlight.stats}
+                      </span>
+                    </div>
+                    <p className="mt-3 text-sm leading-relaxed text-foreground/70">{spotlight.story}</p>
                   </div>
                 ))}
               </div>
             </div>
-            <div className="space-y-4" data-scroll-reveal>
-              <div className="bg-white p-6 rounded-xl shadow-lg">
-                <div className="w-12 h-12 bg-indigo-100 rounded-lg flex items-center justify-center mb-4">
-                  <FaShieldAlt className="text-indigo-600 text-xl" />
-                </div>
-                <h3 className="font-bold text-gray-900 mb-2">Secure & Private</h3>
-                <p className="text-gray-600">Your data is encrypted and protected</p>
-              </div>
-              <div className="bg-white p-6 rounded-xl shadow-lg">
-                <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center mb-4">
-                  <FaMobileAlt className="text-purple-600 text-xl" />
-                </div>
-                <h3 className="font-bold text-gray-900 mb-2">Access Anywhere</h3>
-                <p className="text-gray-600">Works on all your devices</p>
-              </div>
-              <div className="bg-white p-6 rounded-xl shadow-lg">
-                <div className="w-12 h-12 bg-pink-100 rounded-lg flex items-center justify-center mb-4">
-                  <FaCloud className="text-pink-600 text-xl" />
-                </div>
-                <h3 className="font-bold text-gray-900 mb-2">Cloud Sync</h3>
-                <p className="text-gray-600">Automatic backups and sync</p>
-              </div>
+            <div className="rounded-2xl border border-accent/30 bg-gradient-to-br from-[#4de1ff]/20 via-transparent to-[#ff7aa8]/20 p-4 text-sm text-foreground/80 shadow-card">
+              <p className="text-xs uppercase tracking-[0.35em] text-foreground/60">Campus wellness</p>
+              <p className="mt-2 leading-relaxed">
+                Pair your diary with guided breathwork, focus timers, and AI micro-reflections tuned to your class load.
+              </p>
             </div>
-          </div>
-        </div>
-      </section>
+          </section>
+        </HeroMotion>
 
-      {/* Testimonials Section */}
-      <section id="testimonials" className="py-20 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16" data-scroll-reveal>
-            <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">Loved by Thousands</h2>
-            <p className="text-xl text-gray-600">See what our users have to say about their experience</p>
+        <section id="features" className="space-y-12">
+          <div className="max-w-2xl space-y-4">
+            <h2 className="font-heading text-[clamp(2.2rem,1.9rem+1vw,3.2rem)] leading-[1.1] text-foreground">
+              Everything your campus brain needs in one private hub.
+            </h2>
+            <p className="text-lg text-foreground/70">
+              Built for students balancing lectures, clubs, research, and rest. Digital Diary adapts to your schedule and
+              keeps wellness front and centre.
+            </p>
           </div>
-          
-          <div className="grid md:grid-cols-3 gap-8">
-            {testimonials.map((testimonial, index) => (
-              <div
-                key={index}
-                className="bg-gradient-to-br from-gray-50 to-white p-8 rounded-2xl shadow-lg"
-                data-scroll-reveal
+          <motion.div
+            className="grid gap-6 md:grid-cols-2 lg:grid-cols-3"
+            variants={prefersReducedMotion ? undefined : staggerParent}
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, amount: 0.2 }}
+          >
+            {features.map((feature) => (
+              <motion.article
+                key={feature.id}
+                variants={prefersReducedMotion ? undefined : fadeUp}
+                className="group h-full rounded-3xl border border-foreground/10 bg-surface/80 p-6 shadow-soft transition hover:-translate-y-1 hover:border-accent/30 hover:shadow-card"
               >
-                <div className="flex gap-1 mb-4">
-                  {[...Array(testimonial.rating)].map((_, i) => (
-                    <FaStar key={i} className="text-yellow-400" />
-                  ))}
+                <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-accent/40 bg-accent/15 text-accent shadow-inner">
+                  {feature.icon}
                 </div>
-                <FaQuoteLeft className="text-indigo-600 text-3xl mb-4" />
-                <p className="text-gray-700 mb-6 italic">"{testimonial.content}"</p>
-                <div>
-                  <h4 className="font-bold text-gray-900">{testimonial.name}</h4>
-                  <p className="text-gray-600 text-sm">{testimonial.role}</p>
-                </div>
+                <h3 className="mt-5 text-xl font-semibold text-foreground">{feature.title}</h3>
+                <p className="mt-3 text-sm leading-relaxed text-foreground/70">{feature.description}</p>
+              </motion.article>
+            ))}
+          </motion.div>
+        </section>
+
+        <section
+          id="timeline"
+          className="rounded-3xl border border-foreground/10 bg-surface/80 p-8 shadow-glass backdrop-blur-[40px]"
+        >
+          <div className="flex flex-col gap-8 md:flex-row md:items-center md:justify-between">
+            <div className="max-w-xl space-y-4">
+              <h2 className="font-heading text-[clamp(2rem,1.7rem+1vw,2.8rem)] text-foreground">A day with Digital Diary</h2>
+              <p className="text-base text-foreground/70">
+                Follow a student through their campus loop. Digital Diary reinforces healthy habits and keeps academic
+                goals aligned.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={handleNavigateLogin}
+              className="inline-flex items-center gap-2 rounded-full border border-accent/30 bg-accent px-5 py-2 text-sm font-semibold text-foreground-invert shadow-card transition hover:-translate-y-0.5 focus-outline"
+            >
+              Try the flow
+              <FiArrowRight />
+            </button>
+          </div>
+          <div className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+            {journey.map((event) => (
+              <div
+                key={event.title}
+                className="relative flex h-full flex-col gap-3 rounded-2xl border border-foreground/10 bg-surface/70 p-5 shadow-soft"
+              >
+                <span className="text-xs font-medium uppercase tracking-[0.35em] text-foreground/50">{event.time}</span>
+                <h3 className="text-lg font-semibold text-foreground">{event.title}</h3>
+                <p className="text-sm leading-relaxed text-foreground/70">{event.description}</p>
+                <span className="pointer-events-none absolute -right-4 top-4 h-10 w-10 rounded-full border border-accent/20 bg-accent/10 blur-lg" />
               </div>
             ))}
           </div>
-        </div>
-      </section>
+        </section>
 
-      {/* CTA Section */}
-      <section className="py-20 bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 text-white">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="text-4xl md:text-5xl font-bold mb-6" data-scroll-reveal>
-            Ready to Start Your Journey?
-          </h2>
-          <p className="text-xl mb-8 text-white/90" data-scroll-reveal>
-            Join thousands of users who have transformed their digital life with our platform.
-          </p>
-          <button
-            onClick={handleGetStarted}
-            className="px-8 py-4 bg-white text-indigo-600 rounded-xl font-bold text-lg shadow-xl hover:shadow-2xl transition-all hover:scale-105 flex items-center gap-2 mx-auto"
-            data-scroll-reveal
-          >
-            <span>Get Started Free</span>
-            <FaArrowRight />
-          </button>
-          <p className="mt-6 text-white/80" data-scroll-reveal>No credit card required • Free forever</p>
-        </div>
-      </section>
-
-      {/* Footer */}
-      <footer id="contact" className="bg-gray-900 text-white py-12">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid md:grid-cols-3 gap-8 mb-8">
-            <div>
-              <div className="flex items-center gap-2 mb-4">
-                <div className="w-10 h-10 bg-gradient-to-r from-indigo-600 to-purple-600 rounded-lg flex items-center justify-center">
-                  <FaBook />
-                </div>
-                <span className="text-xl font-bold">Digital Diary</span>
-              </div>
-              <p className="text-gray-400">
-                Your personal digital companion for organizing thoughts, tracking mood, and managing life's journey.
-              </p>
-            </div>
-            <div>
-              <h3 className="font-bold mb-4">Features</h3>
-              <ul className="space-y-2 text-gray-400">
-                <li><a href="#features" className="hover:text-white transition-colors">Digital Diary</a></li>
-                <li><a href="#features" className="hover:text-white transition-colors">Task Management</a></li>
-                <li><a href="#features" className="hover:text-white transition-colors">Mood Tracking</a></li>
-                <li><a href="#features" className="hover:text-white transition-colors">Quick Notes</a></li>
-              </ul>
-            </div>
-            <div>
-              <h3 className="font-bold mb-4">Support</h3>
-              <ul className="space-y-2 text-gray-400">
-                <li><a href="mailto:support@digitaldiary.com" className="hover:text-white transition-colors">Help Center</a></li>
-                <li><a href="/privacy" className="hover:text-white transition-colors">Privacy Policy</a></li>
-                <li><a href="/terms" className="hover:text-white transition-colors">Terms of Service</a></li>
-                <li><a href="mailto:contact@digitaldiary.com" className="hover:text-white transition-colors">Contact Us</a></li>
-              </ul>
-            </div>
+        <section id="testimonials" className="space-y-12">
+          <div className="max-w-2xl space-y-4">
+            <h2 className="font-heading text-[clamp(2.2rem,1.9rem+1vw,3.2rem)] leading-[1.1] text-foreground">
+              Real voices. Real wins.
+            </h2>
+            <p className="text-lg text-foreground/70">
+              Students, mentors, and wellbeing leads share how Digital Diary anchors their routines.
+            </p>
           </div>
-          <div className="border-t border-gray-800 pt-8 text-center text-gray-400">
-            <p>&copy; 2024 Digital Diary. All rights reserved.</p>
-            <p className="mt-2">Designed by <span className="text-indigo-400">Samiya Nur</span></p>
+          <motion.div
+            className="grid gap-6 md:grid-cols-3"
+            variants={prefersReducedMotion ? undefined : staggerParent}
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, amount: 0.3 }}
+          >
+            {testimonials.map((testimonial) => (
+              <motion.blockquote
+                key={testimonial.name}
+                variants={prefersReducedMotion ? undefined : fadeUp}
+                className="relative h-full rounded-3xl border border-foreground/10 bg-surface/90 p-6 text-sm leading-relaxed text-foreground/75 shadow-soft transition hover:-translate-y-1 hover:border-accent/30 hover:shadow-card"
+              >
+                <FaQuoteLeft className="text-3xl text-accent/60" aria-hidden />
+                <p className="mt-4 text-base text-foreground/80">“{testimonial.quote}”</p>
+                <footer className="mt-6">
+                  <p className="text-sm font-semibold text-foreground">{testimonial.name}</p>
+                  <p className="text-xs text-foreground/60">{testimonial.role}</p>
+                </footer>
+              </motion.blockquote>
+            ))}
+          </motion.div>
+        </section>
+
+        <section className="rounded-3xl border border-accent/20 bg-gradient-to-r from-[#5b5bff]/35 via-[#4de1ff]/20 to-[#ff7aa8]/30 p-10 text-center shadow-card">
+          <p className="text-sm uppercase tracking-[0.35em] text-foreground/60">Free for students</p>
+          <h2 className="mt-4 font-heading text-[clamp(2.1rem,1.8rem+0.9vw,3rem)] leading-[1.1] text-foreground">
+            Ready to protect your stories and amplify your campus journey?
+          </h2>
+          <p className="mt-4 text-base text-foreground/70">
+            Sign in with the account screen you saw earlier and unlock AI reflections, secure vaults, and adaptive
+            planners.
+          </p>
+          <div className="mt-6 flex flex-col justify-center gap-3 sm:flex-row">
+            <button
+              type="button"
+              onClick={handleNavigateLogin}
+              className="inline-flex items-center justify-center gap-2 rounded-full border border-foreground/10 bg-foreground px-7 py-3 text-base font-semibold text-foreground-invert shadow-elevated transition hover:-translate-y-0.5 focus-outline"
+            >
+              Sign in now
+            </button>
+            <button
+              type="button"
+              onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+              className="inline-flex items-center justify-center gap-2 rounded-full border border-foreground/15 bg-surface px-6 py-3 text-base font-semibold text-foreground/80 shadow-soft transition hover:border-accent/30 focus-outline"
+            >
+              Rewatch intro
+            </button>
+          </div>
+        </section>
+      </main>
+
+      <footer className="border-t border-foreground/10 bg-surface/80 py-10">
+        <div className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-5 text-sm text-foreground/60 md:flex-row md:items-center md:justify-between md:px-10">
+          <div>
+            <p className="text-sm font-semibold text-foreground/80">Digital Diary</p>
+            <p className="text-xs">© {new Date().getFullYear()} Digital Diary Collective. Built for campus wellbeing.</p>
+          </div>
+          <div className="flex flex-wrap gap-4">
+            <a href="mailto:hello@digitaldiary.app" className="transition hover:text-accent focus-outline">
+              Contact
+            </a>
+            <a href="/privacy" className="transition hover:text-accent focus-outline">
+              Privacy
+            </a>
+            <a href="/terms" className="transition hover:text-accent focus-outline">
+              Terms
+            </a>
           </div>
         </div>
       </footer>
 
-      {/* AI Chat Widget */}
       <AIChatWidget />
     </div>
   );

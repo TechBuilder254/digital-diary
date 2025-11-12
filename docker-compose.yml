@@ -1,0 +1,31 @@
+services:
+  api:
+    build:
+      context: /home/techbuilder/Desktop/Dg/digital-diary
+    environment:
+      NODE_ENV: production
+      PORT: 5000
+      SUPABASE_URL: ${SUPABASE_URL:-}
+      SUPABASE_SERVICE_ROLE_KEY: ${SUPABASE_SERVICE_ROLE_KEY:-}
+      SUPABASE_ANON_KEY: ${SUPABASE_ANON_KEY:-}
+    ports:
+      - "5000:5000"
+    networks:
+      - app-net
+
+  frontend:
+    build:
+      context: /home/techbuilder/Desktop/Dg/digital-diary/frontend
+      args:
+        REACT_APP_API_URL: ${REACT_APP_API_URL:-/api}
+    depends_on:
+      - api
+    ports:
+      - "3000:80"
+    networks:
+      - app-net
+
+networks:
+  app-net:
+    driver: bridge
+

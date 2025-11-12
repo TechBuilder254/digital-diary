@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { Link, useNavigate, useLocation, Outlet } from 'react-router-dom';
 import axios from '../../config/axios';
 import { 
   FaBars, 
@@ -19,7 +19,7 @@ import {
 import QuickAudioRecorder from '../QuickAudioRecorder';
 
 interface LayoutProps {
-  children: React.ReactNode;
+  children?: React.ReactNode;
   userName?: string;
 }
 
@@ -500,11 +500,11 @@ const Layout: React.FC<LayoutProps> = ({ children, userName }) => {
           )}
         </header>
         
-        <main 
+        <main
           ref={contentRef}
           className="flex-1 overflow-y-auto bg-gray-50 p-4 lg:p-8"
         >
-          {children}
+          {children ?? <Outlet />}
         </main>
       </div>
       
