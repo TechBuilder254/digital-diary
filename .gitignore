@@ -2,3 +2,12 @@
 
 # dependencies
 /node_modules
+
+# Environment variables and secrets
+.env
+.env.local
+.env.*.local
+secets.js
+secert.js
+*.secret
+secrets.js
