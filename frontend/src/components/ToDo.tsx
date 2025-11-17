@@ -352,28 +352,30 @@ const TodoList: React.FC = () => {
                   : 'border-gray-100'
               }`}
             >
-              <div className="flex items-start gap-3">
-                <div className={`w-8 h-8 rounded-lg flex items-center justify-center font-bold flex-shrink-0 text-xs ${
-                  todo.completed 
-                    ? 'bg-green-500 text-white' 
-                    : 'bg-gradient-to-r from-pink-500 to-purple-600 text-white'
-                }`}>
-                  {index + 1}
-                </div>
-                <button
-                  className={`px-4 py-2 rounded-lg font-semibold transition-colors ${
+              <div className="flex flex-col sm:flex-row items-start gap-3">
+                <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto">
+                  <div className={`w-8 h-8 rounded-lg flex items-center justify-center font-bold flex-shrink-0 text-xs ${
                     todo.completed 
-                      ? 'bg-green-100 text-green-700' 
-                      : 'bg-yellow-100 text-yellow-700'
-                  }`}
-                  onClick={() => handleToggleComplete(todo.id, todo.completed)}
-                >
-                  {todo.completed ? 'Completed' : 'Pending'}
-                </button>
+                      ? 'bg-green-500 text-white' 
+                      : 'bg-gradient-to-r from-pink-500 to-purple-600 text-white'
+                  }`}>
+                    {index + 1}
+                  </div>
+                  <button
+                    className={`px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg font-semibold transition-colors text-xs sm:text-sm whitespace-nowrap ${
+                      todo.completed 
+                        ? 'bg-green-100 text-green-700' 
+                        : 'bg-yellow-100 text-yellow-700'
+                    }`}
+                    onClick={() => handleToggleComplete(todo.id, todo.completed)}
+                  >
+                    {todo.completed ? 'Completed' : 'Pending'}
+                  </button>
+                </div>
 
-                <div className="flex-1 min-w-0">
+                <div className="flex-1 min-w-0 w-full sm:w-auto">
                   <div 
-                    className={`text-sm font-medium mb-1 cursor-pointer ${
+                    className={`text-sm font-medium mb-1 cursor-pointer break-words ${
                       todo.completed ? 'line-through text-gray-500' : 'text-gray-900'
                     }`}
                     onClick={() => handleEditTodolist(todo.id)}
@@ -381,35 +383,35 @@ const TodoList: React.FC = () => {
                     {todo.text || 'No text available'}
                   </div>
                   {todo.expiry_date && (
-                    <div className={`flex items-center gap-2 text-xs ${
+                    <div className={`flex items-center gap-2 text-xs flex-wrap ${
                       isExpired(todo.expiry_date) 
                         ? 'text-red-600 font-semibold' 
                         : isExpiringSoon(todo.expiry_date)
                         ? 'text-orange-600 font-semibold'
                         : 'text-gray-500'
                     }`}>
-                      <FaCalendarAlt />
-                      <span>
+                      <FaCalendarAlt className="flex-shrink-0" />
+                      <span className="break-words">
                         {new Date(todo.expiry_date).toLocaleDateString()} at {new Date(todo.expiry_date).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
                       </span>
-                      {isExpired(todo.expiry_date) && <span className="font-bold">OVERDUE</span>}
-                      {!isExpired(todo.expiry_date) && isExpiringSoon(todo.expiry_date) && <span className="font-bold">DUE SOON</span>}
+                      {isExpired(todo.expiry_date) && <span className="font-bold whitespace-nowrap">OVERDUE</span>}
+                      {!isExpired(todo.expiry_date) && isExpiringSoon(todo.expiry_date) && <span className="font-bold whitespace-nowrap">DUE SOON</span>}
                     </div>
                   )}
                 </div>
 
-                <div className="flex gap-2">
+                <div className="flex gap-2 w-full sm:w-auto justify-end sm:justify-start">
                   {!showTrash ? (
                     <>
                       <button
-                        className="px-4 py-2 bg-indigo-600 text-white rounded-lg font-semibold hover:bg-indigo-700 transition-colors"
+                        className="px-3 py-2 sm:px-4 sm:py-2 bg-indigo-600 text-white rounded-lg font-semibold hover:bg-indigo-700 transition-colors text-xs sm:text-sm whitespace-nowrap flex-1 sm:flex-initial"
                         onClick={() => handleEditTodolist(todo.id)}
                         title="Edit"
                       >
                         Edit
                       </button>
                       <button
-                        className="px-4 py-2 bg-red-600 text-white rounded-lg font-semibold hover:bg-red-700 transition-colors"
+                        className="px-3 py-2 sm:px-4 sm:py-2 bg-red-600 text-white rounded-lg font-semibold hover:bg-red-700 transition-colors text-xs sm:text-sm whitespace-nowrap flex-1 sm:flex-initial"
                         onClick={() => handleDeleteTodolist(todo.id)}
                         title="Delete"
                       >
@@ -419,14 +421,14 @@ const TodoList: React.FC = () => {
                   ) : (
                     <>
                       <button
-                        className="px-4 py-2 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700 transition-colors"
+                        className="px-3 py-2 sm:px-4 sm:py-2 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700 transition-colors text-xs sm:text-sm whitespace-nowrap flex-1 sm:flex-initial"
                         onClick={() => handleRestoreTodolist(todo.id)}
                         title="Restore"
                       >
                         Restore
                       </button>
                       <button
-                        className="px-4 py-2 bg-red-600 text-white rounded-lg font-semibold hover:bg-red-700 transition-colors"
+                        className="px-3 py-2 sm:px-4 sm:py-2 bg-red-600 text-white rounded-lg font-semibold hover:bg-red-700 transition-colors text-xs sm:text-sm whitespace-nowrap flex-1 sm:flex-initial"
                         onClick={() => handlePermanentDelete(todo.id)}
                         title="Delete Forever"
                       >

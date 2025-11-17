@@ -39,14 +39,22 @@ const routes = {
 
 // Create server
 const server = http.createServer(async (req, res) => {
-  // Enable CORS
-  res.setHeader('Access-Control-Allow-Origin', '*');
+  // Enable CORS with proper headers for cross-platform support
+  const origin = req.headers.origin || '*';
+  res.setHeader('Access-Control-Allow-Origin', origin);
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
+  res.setHeader('Access-Control-Allow-Credentials', 'true');
+  res.setHeader('Access-Control-Max-Age', '86400'); // 24 hours
 
   // Handle OPTIONS preflight
   if (req.method === 'OPTIONS') {
-    res.writeHead(204);
+    res.writeHead(204, {
+      'Access-Control-Allow-Origin': origin,
+      'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, PATCH, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Requested-With',
+      'Access-Control-Max-Age': '86400'
+    });
     res.end();
     return;
   }
@@ -75,7 +83,6 @@ const server = http.createServer(async (req, res) => {
       const headers = {
         get: (name) => {
           const lowerName = name.toLowerCase();
-          // Node.js headers are already lowercased, but check both
           return req.headers[lowerName] || req.headers[name];
         },
         has: (name) => {
@@ -94,14 +101,6 @@ const server = http.createServer(async (req, res) => {
           yield [key, value];
         }
       };
-      
-      // Debug: log Authorization header
-      const authHeader = headers.get('authorization') || headers.get('Authorization');
-      if (authHeader) {
-        console.log(`[Server] Found Authorization header: ${authHeader.substring(0, 30)}...`);
-      } else {
-        console.log(`[Server] No Authorization header found. Available headers:`, Object.keys(req.headers));
-      }
 
       // Create Web API compatible request
       // The URL should be the full path including the API path
@@ -109,30 +108,25 @@ const server = http.createServer(async (req, res) => {
         method: req.method,
         url: `http://localhost:${PORT}${pathname}${parsedUrl.search || ''}`,
         headers: headers,
-        json: async () => body ? JSON.parse(body) : {},
+        json: async () => {
+          try {
+            if (!body || body.trim() === '') {
+              return {};
+            }
+            return JSON.parse(body);
+          } catch (error) {
+            throw error;
+          }
+        },
         text: async () => body,
         formData: async () => null,
       };
-      
-      // Debug: Log request details for API calls
-      if (pathname.startsWith('/api/') && pathname !== '/api/auth') {
-        console.log(`[Server] API Request: ${req.method} ${pathname}`);
-        console.log(`[Server] Authorization header present: ${!!authHeader}`);
-        if (authHeader) {
-          console.log(`[Server] Auth header value: ${authHeader.substring(0, 40)}...`);
-        }
-      }
-
       // Find handler
       let handler = null;
-
-      // Debug logging
-      console.log(`[${req.method}] ${pathname}${parsedUrl.search || ''}`);
 
       // IMPORTANT: Check specific routes BEFORE general ones
       // Check for auth route FIRST
       if (pathname === '/api/auth') {
-        console.log('Found auth handler');
         handler = authHandler;
       }
       // Check for audio upload route (before /api/notes matches)
@@ -189,12 +183,17 @@ const server = http.createServer(async (req, res) => {
       if (!handler) {
         console.log(`No handler found for ${pathname}`);
         console.log('Available routes:', Object.keys(routes));
-        res.writeHead(404, { 'Content-Type': 'application/json' });
+        const notFoundOrigin = req.headers.origin || '*';
+        res.writeHead(404, { 
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': notFoundOrigin,
+          'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, PATCH, OPTIONS',
+          'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Requested-With',
+          'Access-Control-Allow-Credentials': 'true',
+        });
         res.end(JSON.stringify({ error: 'Not found', pathname }));
         return;
       }
-
-      console.log(`Calling handler for ${pathname}`);
 
       // Call handler
       const response = await handler(request);
@@ -214,25 +213,41 @@ const server = http.createServer(async (req, res) => {
                       contentType.startsWith('video/') ||
                       contentType === 'application/octet-stream';
 
+      // Add CORS headers to all responses
+      const corsResponseHeaders = {
+        'Access-Control-Allow-Origin': origin,
+        'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, PATCH, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Requested-With',
+        'Access-Control-Allow-Credentials': 'true',
+        ...responseHeaders,
+      };
+
       if (isBinary) {
         // Handle binary response (audio, images, etc.)
         const arrayBuffer = await response.arrayBuffer();
         const buffer = Buffer.from(arrayBuffer);
         
-        res.writeHead(response.status, responseHeaders);
+        res.writeHead(response.status, corsResponseHeaders);
         res.end(buffer);
       } else {
         // Handle text/JSON response
         const responseBody = await response.text();
         res.writeHead(response.status, {
           'Content-Type': 'application/json',
-          ...responseHeaders,
+          ...corsResponseHeaders,
         });
         res.end(responseBody);
       }
     } catch (error) {
       console.error('Server error:', error);
-      res.writeHead(500, { 'Content-Type': 'application/json' });
+      const errorOrigin = req.headers.origin || '*';
+      res.writeHead(500, { 
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': errorOrigin,
+        'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, PATCH, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Requested-With',
+        'Access-Control-Allow-Credentials': 'true',
+      });
       res.end(JSON.stringify({ error: 'Internal server error', details: error.message }));
     }
   });
@@ -348,24 +363,41 @@ async function handleMultipartRequest(req, res, pathname, parsedUrl) {
                         contentType.startsWith('video/') ||
                         contentType === 'application/octet-stream';
 
+        // Add CORS headers to all responses
+        const multipartOrigin = req.headers.origin || '*';
+        const corsMultipartHeaders = {
+          'Access-Control-Allow-Origin': multipartOrigin,
+          'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, PATCH, OPTIONS',
+          'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Requested-With',
+          'Access-Control-Allow-Credentials': 'true',
+          ...responseHeaders,
+        };
+
         if (isBinary) {
           // Handle binary response
           const arrayBuffer = await response.arrayBuffer();
           const buffer = Buffer.from(arrayBuffer);
-          res.writeHead(response.status, responseHeaders);
+          res.writeHead(response.status, corsMultipartHeaders);
           res.end(buffer);
         } else {
           // Handle text/JSON response
           const responseBody = await response.text();
           res.writeHead(response.status, {
             'Content-Type': 'application/json',
-            ...responseHeaders,
+            ...corsMultipartHeaders,
           });
           res.end(responseBody);
         }
       } catch (error) {
         console.error('Handler error:', error);
-        res.writeHead(500, { 'Content-Type': 'application/json' });
+        const errorOrigin = req.headers.origin || '*';
+        res.writeHead(500, { 
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': errorOrigin,
+          'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, PATCH, OPTIONS',
+          'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Requested-With',
+          'Access-Control-Allow-Credentials': 'true',
+        });
         res.end(JSON.stringify({ error: 'Internal server error', details: error.message }));
       }
     });
@@ -373,7 +405,14 @@ async function handleMultipartRequest(req, res, pathname, parsedUrl) {
     req.pipe(busboy);
   } catch (error) {
     console.error('Multipart parsing error:', error);
-    res.writeHead(500, { 'Content-Type': 'application/json' });
+    const errorOrigin = req.headers.origin || '*';
+    res.writeHead(500, { 
+      'Content-Type': 'application/json',
+      'Access-Control-Allow-Origin': errorOrigin,
+      'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, PATCH, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Requested-With',
+      'Access-Control-Allow-Credentials': 'true',
+    });
     res.end(JSON.stringify({ error: 'Failed to parse form data', details: error.message }));
   }
 }

@@ -1,0 +1,45 @@
+services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    environment:
+      NODE_ENV: development
+      PORT: 5000
+      SUPABASE_URL: ${SUPABASE_URL:-}
+      SUPABASE_SERVICE_ROLE_KEY: ${SUPABASE_SERVICE_ROLE_KEY:-}
+      SUPABASE_ANON_KEY: ${SUPABASE_ANON_KEY:-}
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./api:/usr/src/app/api
+      - ./lib:/usr/src/app/lib
+      - ./server-dev.js:/usr/src/app/server-dev.js
+      - ./package.json:/usr/src/app/package.json
+      - /usr/src/app/node_modules
+    networks:
+      - app-net
+    command: node server-dev.js
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.dev
+    environment:
+      REACT_APP_API_URL: http://localhost:5000/api
+      CHOKIDAR_USEPOLLING: "true"
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./frontend:/usr/src/app
+      - /usr/src/app/node_modules
+    networks:
+      - app-net
+    depends_on:
+      - api
+    command: npm start
+
+networks:
+  app-net:
+    driver: bridge
+

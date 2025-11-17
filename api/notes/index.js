@@ -45,7 +45,6 @@ module.exports = async (req) => {
       
       return createResponse(filteredNotes, 200);
     } catch (err) {
-      console.error('[Notes] Query error:', err.message);
       return createResponse({ error: 'Database query failed' }, 500);
     }
   }
@@ -69,7 +68,6 @@ module.exports = async (req) => {
         timeout: 2000
       });
       
-      // CRITICAL SAFETY CHECK
       const filteredNotes = Array.isArray(notes) 
         ? notes.filter(n => {
             const noteUserId = parseInt(n.user_id, 10);
@@ -79,7 +77,6 @@ module.exports = async (req) => {
       
       return createResponse(filteredNotes, 200);
     } catch (err) {
-      console.error('[Notes] Favorites query error:', err.message);
       return createResponse({ error: 'Database query failed' }, 500);
     }
   }
@@ -104,7 +101,6 @@ module.exports = async (req) => {
         timeout: 2000
       });
       
-      // CRITICAL SAFETY CHECK
       const filteredNotes = Array.isArray(notes) 
         ? notes.filter(n => {
             const noteUserId = parseInt(n.user_id, 10);
@@ -114,7 +110,6 @@ module.exports = async (req) => {
       
       return createResponse(filteredNotes, 200);
     } catch (err) {
-      console.error('[Notes] Category query error:', err.message);
       return createResponse({ error: 'Database query failed' }, 500);
     }
   }
@@ -125,7 +120,6 @@ module.exports = async (req) => {
       const body = await parseBody(req);
       const { title, content, category, tags, priority, is_favorite, audio_filename, audio_duration, audio_size, has_audio, user_id } = body;
 
-      // Use user_id from body or from request (headers/query)
       const finalUserId = user_id || userId;
 
       if (!title || !content) {
@@ -152,7 +146,6 @@ module.exports = async (req) => {
 
       return createResponse(newNote, 201);
     } catch (err) {
-      console.error('[Notes] Insert error:', err.message);
       return createResponse({ error: 'Database insert error', details: err.message }, 500);
     }
   }
@@ -164,9 +157,16 @@ module.exports = async (req) => {
         return createResponse({ error: 'User ID is required' }, 401);
       }
       
+      const numericId = parseInt(id, 10);
+      const numericUserId = parseInt(userId, 10);
+      
+      if (isNaN(numericId)) {
+        return createResponse({ error: 'Invalid note ID' }, 400);
+      }
+      
       // Verify ownership
       const existingNote = await fastQuery('notes', {
-        filters: { 'id': id, 'user_id': userId },
+        filters: { 'id': numericId, 'user_id': numericUserId },
         timeout: 2000
       });
       
@@ -194,10 +194,9 @@ module.exports = async (req) => {
         has_audio: has_audio !== undefined ? has_audio : false
       };
 
-      const updatedNote = await fastUpdate('notes', id, updateData, 3000);
+      const updatedNote = await fastUpdate('notes', numericId, updateData, 3000);
       return createResponse(updatedNote || { error: 'Note not found' }, updatedNote ? 200 : 404);
     } catch (err) {
-      console.error('[Notes] Update error:', err.message);
       return createResponse({ error: 'Database update error', details: err.message }, 500);
     }
   }
@@ -228,7 +227,6 @@ module.exports = async (req) => {
         is_favorite: updatedNote?.is_favorite 
       }, updatedNote ? 200 : 404);
     } catch (err) {
-      console.error('[Notes] Favorite update error:', err.message);
       return createResponse({ error: 'Database update error', details: err.message }, 500);
     }
   }
@@ -240,9 +238,16 @@ module.exports = async (req) => {
         return createResponse({ error: 'User ID is required' }, 401);
       }
       
+      const numericId = parseInt(id, 10);
+      const numericUserId = parseInt(userId, 10);
+      
+      if (isNaN(numericId)) {
+        return createResponse({ error: 'Invalid note ID' }, 400);
+      }
+      
       // Verify ownership
       const existingNote = await fastQuery('notes', {
-        filters: { 'id': id, 'user_id': userId },
+        filters: { 'id': numericId, 'user_id': numericUserId },
         timeout: 2000
       });
       
@@ -250,10 +255,9 @@ module.exports = async (req) => {
         return createResponse({ error: 'Note not found or access denied' }, 404);
       }
       
-      await fastDelete('notes', id, 3000);
+      await fastDelete('notes', numericId, 3000);
       return createResponse({ message: 'Note deleted successfully' }, 200);
     } catch (err) {
-      console.error('[Notes] Delete error:', err.message);
       return createResponse({ error: 'Database delete error', details: err.message }, 500);
     }
   }

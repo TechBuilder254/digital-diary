@@ -76,35 +76,23 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
       return;
     }
 
-    console.log('Attempting login with:', { username: signInUsername });
 
     try {
       const response = await axios.post<AuthResponse>('/api/auth?action=login', {
-        action: 'login',
         username: signInUsername,
         password: signInPassword
       });
-
-      console.log('Login response:', response.data);
 
       if (response.data.success && response.data.user) {
         localStorage.setItem('token', response.data.token || 'dummy-token');
         localStorage.setItem('user', JSON.stringify(response.data.user));
         
-        console.log('Login successful, navigating to dashboard...');
-        showToastNotification('Login successful!', 'success');
-        
         onLogin(response.data.user);
-        
-        setTimeout(() => {
-          navigate('/dashboard');
-        }, 1500);
+        navigate('/dashboard');
       } else {
-        console.log('Login failed:', response.data.message);
         showToastNotification(response.data.message || 'Sign in failed', 'error');
       }
     } catch (error) {
-      console.error('Sign in error:', error);
       const axiosError = error as AxiosError<{ message?: string }>;
       showToastNotification(
         axiosError.response?.data?.message || 'Sign in failed. Please try again.', 

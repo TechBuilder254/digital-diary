@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "prestart": "./kill-ports.sh || true",
+    "prestart": "node kill-ports.js || true",
     "start": "concurrently \"npm run dev:api\" \"npm run dev:frontend\"",
     "dev": "vercel dev",
     "dev:api": "node server-dev.js",
@@ -13,7 +13,15 @@
     "install:all": "npm install && cd frontend && npm install",
     "test:register-login": "node scripts/test-register-login.js",
     "test:deployment": "node scripts/test-deployment.js",
-    "clean": "./kill-ports.sh"
+    "test:login": "node scripts/test-login.js",
+    "check:users": "node scripts/check-users.js",
+    "clean": "node kill-ports.js",
+    "docker": "node start.js",
+    "docker:build": "node start.js --build",
+    "docker:start": "docker compose up -d",
+    "docker:stop": "docker compose down",
+    "docker:logs": "docker compose logs -f",
+    "docker:restart": "docker compose restart"
   },
   "keywords": [],
   "author": "",

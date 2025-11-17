@@ -37,25 +37,11 @@ const supabase = supabaseUrl && supabaseKey ? createClient(supabaseUrl, supabase
 
 const { handleCORS, createResponse, parseBody, getQueryParams } = require('../../lib/handler');
 
-function log(...args) {
-  console.log('[Auth]', ...args);
-}
-
 module.exports = async (req) => {
-  const startTime = Date.now();
-  log('request', { method: req.method, url: req.url });
-  
   const corsResponse = handleCORS(req);
   if (corsResponse) return corsResponse;
 
-  // Check if Supabase is configured
   if (!supabase) {
-    log('missing env', {
-      hasUrl: Boolean(supabaseUrl),
-      urlLength: supabaseUrl ? supabaseUrl.length : 0,
-      hasKey: Boolean(supabaseKey),
-      keyLength: supabaseKey ? supabaseKey.length : 0,
-    });
     return createResponse({ 
       message: 'Server configuration error', 
       error: 'Database connection not configured' 
@@ -67,136 +53,55 @@ module.exports = async (req) => {
   }
 
   try {
-    const parseStart = Date.now();
     const body = await parseBody(req);
     const queryParams = getQueryParams(req);
     const action = queryParams.action || body.action || 'login';
-    log('parsed', { durationMs: Date.now() - parseStart, action });
-
-    // Route based on action
-    const handlerStart = Date.now();
-    let response;
-    log('action:body', { action, body });
 
     switch (action) {
       case 'login':
-        response = await handleLogin(body);
-        break;
+        return await handleLogin(body);
       case 'register':
-        response = await handleRegister(body);
-        break;
+        return await handleRegister(body);
       case 'forgot-password':
-        response = await handleForgotPassword(body);
-        break;
+        return await handleForgotPassword(body);
       default:
-        response = createResponse({ message: 'Invalid action' }, 400);
+        return createResponse({ message: 'Invalid action' }, 400);
     }
-    const result = await response;
-    log('completed', {
-      handlerMs: Date.now() - handlerStart,
-      totalMs: Date.now() - startTime,
-      status: result?.status,
-    });
-    return result;
   } catch (error) {
-    log('error', { durationMs: Date.now() - startTime, message: error?.message, stack: error?.stack });
     return createResponse({ message: 'An error occurred', error: error.message }, 500);
   }
 };
 
 async function handleLogin(body) {
   const { username, password } = body;
-  log('login:body', { hasUsername: Boolean(username), hasPassword: Boolean(password) });
 
   if (!username || !password) {
-    log('login:missing-credentials');
     return createResponse({ message: 'Both username and password are required' }, 400);
   }
 
-  // Trim username but keep case-sensitive (database stores case-sensitive usernames)
   const trimmedUsername = username.trim();
 
   try {
-    log('login:start', { user: trimmedUsername });
-    const queryStart = Date.now();
+    // Use optimized fastQuery for maximum speed
+    const { fastQuery } = require('../../lib/supabase-rest');
     
-    // Use direct REST API call instead of JS client for better performance in serverless
-    // This bypasses the JS client overhead and is faster for simple queries
-    if (!supabaseUrl || !supabaseKey) {
-      throw new Error('Supabase configuration missing');
-    }
-    
-    const restUrl = `${supabaseUrl}/rest/v1/users?username=eq.${encodeURIComponent(trimmedUsername)}&select=id,username,email,password&limit=1`;
-    
-    // Create AbortController for timeout (3 seconds for REST API, faster than JS client)
-    const controller = new AbortController();
-    const REST_TIMEOUT_MS = parseInt(process.env.SUPABASE_REST_TIMEOUT_MS || '3500', 10);
-    const timeoutId = setTimeout(() => {
-      controller.abort();
-      console.error(`[Login] REST API request aborted after ${REST_TIMEOUT_MS}ms`);
-    }, REST_TIMEOUT_MS);
-    
-    const fetchPromise = fetch(restUrl, {
-      method: 'GET',
-      headers: {
-        'apikey': supabaseKey,
-        'Authorization': `Bearer ${supabaseKey}`,
-        'Content-Type': 'application/json',
-        'Prefer': 'return=representation'
-      },
-      signal: controller.signal
-    }).then(async (response) => {
-      clearTimeout(timeoutId);
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`HTTP ${response.status}: ${errorText}`);
-      }
-      return response.json();
-    }).catch((error) => {
-      clearTimeout(timeoutId);
-      throw error;
+    const users = await fastQuery('users', {
+      filters: { 'username': trimmedUsername },
+      select: 'id,username,email,password',
+      limit: 1,
+      timeout: 1500
     });
 
-    let users;
-    try {
-      users = await fetchPromise;
-      log('login:rest:success', { durationMs: Date.now() - queryStart, count: users?.length || 0 });
-    } catch (fetchError) {
-      const elapsed = Date.now() - queryStart;
-      log('login:rest:error', { durationMs: elapsed, message: fetchError?.message });
-
-      const fallbackResult = await queryWithSupabaseClient(trimmedUsername, queryStart);
-      if (!fallbackResult.ok) {
-        return fallbackResult.response;
-      }
-      users = fallbackResult.users;
-    }
-
     if (!users || users.length === 0) {
-      log('login:invalid-credentials');
       return createResponse({ message: 'Invalid credentials' }, 401);
     }
 
     const user = users[0];
 
-    // Add timeout to bcrypt comparison
-    const compareStart = Date.now();
-    const comparePromise = bcrypt.compare(password, user.password);
-    const compareTimeout = new Promise((_, reject) => 
-      setTimeout(() => reject(new Error('Password comparison timeout')), 5000)
-    );
-
-    let isMatch;
-    try {
-      isMatch = await Promise.race([comparePromise, compareTimeout]);
-      log('login:password:success', { durationMs: Date.now() - compareStart });
-    } catch (compareError) {
-      log('login:password:error', { durationMs: Date.now() - compareStart, message: compareError?.message });
-      return createResponse({ message: 'Request timeout - password verification issue', error: compareError.message }, 504);
-    }
+    // Direct bcrypt comparison - no timeout wrapper needed (bcrypt is fast)
+    const isMatch = await bcrypt.compare(password, user.password);
 
     if (isMatch) {
-      log('login:success', { userId: user.id });
       return createResponse({
         message: 'Login successful',
         success: true,
@@ -204,47 +109,13 @@ async function handleLogin(body) {
         user: { id: user.id, username: user.username, email: user.email }
       }, 200);
     } else {
-      log('login:password-mismatch');
       return createResponse({ message: 'Invalid credentials' }, 401);
     }
   } catch (error) {
-    log('login:error', { message: error?.message, stack: error?.stack });
     return createResponse({ message: 'Login failed', error: error.message }, 500);
   }
 }
 
-async function queryWithSupabaseClient(trimmedUsername, queryStart) {
-  try {
-    const CLIENT_TIMEOUT_MS = parseInt(process.env.SUPABASE_CLIENT_TIMEOUT_MS || '4000', 10);
-    const queryPromise = supabase
-      .from('users')
-      .select('id, username, email, password')
-      .eq('username', trimmedUsername)
-      .maybeSingle();
-
-    const timeoutPromise = new Promise((_, reject) =>
-      setTimeout(() => reject(new Error('Database query timeout')), CLIENT_TIMEOUT_MS)
-    );
-
-    const queryResult = await Promise.race([queryPromise, timeoutPromise]);
-    if (queryResult && queryResult.error) {
-      throw new Error(queryResult.error.message);
-    }
-
-    const users = queryResult && queryResult.data ? [queryResult.data] : [];
-    log('login:client:success', { durationMs: Date.now() - queryStart, found: users.length });
-    return { ok: true, users };
-  } catch (fallbackError) {
-    log('login:client:error', { message: fallbackError?.message });
-    return {
-      ok: false,
-      response: createResponse({
-        message: 'Database connection failed',
-        error: fallbackError.message || 'Unable to connect to database',
-      }, fallbackError.message && fallbackError.message.includes('timeout') ? 504 : 503),
-    };
-  }
-}
 
 async function handleRegister(body) {
   const { username, email, password } = body;
@@ -268,7 +139,6 @@ async function handleRegister(body) {
     const { data: existingUsers, error: checkError } = await Promise.race([checkPromise, checkTimeout]);
 
     if (checkError) {
-      log('register:check:error', { message: checkError?.message, code: checkError?.code });
       return createResponse({ message: 'Database error', error: checkError.message }, 500);
     }
 
@@ -297,13 +167,11 @@ async function handleRegister(body) {
     const { data: newUser, error: insertError } = await Promise.race([insertPromise, insertTimeout]);
 
     if (insertError) {
-      log('register:insert:error', { message: insertError?.message, code: insertError?.code });
       return createResponse({ message: 'Registration failed', error: insertError.message }, 500);
     }
 
     return createResponse({ message: 'Registration successful!', success: true }, 200);
   } catch (error) {
-    log('register:error', { message: error?.message, stack: error?.stack });
     return createResponse({ message: 'Registration failed', error: error.message }, 500);
   }
 }

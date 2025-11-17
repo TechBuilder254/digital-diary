@@ -45,7 +45,6 @@ module.exports = async (req) => {
       
       return createResponse(filteredTodos, 200);
     } catch (err) {
-      console.error('[Todos] Query error:', err.message);
       return createResponse({ error: 'Database query failed' }, 500);
     }
   }
@@ -69,7 +68,6 @@ module.exports = async (req) => {
         timeout: 2000
       });
       
-      // CRITICAL SAFETY CHECK
       const filteredTodos = Array.isArray(todos) 
         ? todos.filter(t => {
             const todoUserId = parseInt(t.user_id, 10);
@@ -79,7 +77,6 @@ module.exports = async (req) => {
       
       return createResponse(filteredTodos, 200);
     } catch (err) {
-      console.error('[Todos] Trash query error:', err.message);
       return createResponse({ error: 'Database query failed' }, 500);
     }
   }
@@ -90,7 +87,6 @@ module.exports = async (req) => {
       const body = await parseBody(req);
       const { text, user_id, expiry_date } = body;
 
-      // Use user_id from body or from request (headers/query)
       const finalUserId = user_id || userId;
 
       if (!text) {
@@ -111,7 +107,6 @@ module.exports = async (req) => {
 
       return createResponse(newTodo, 201);
     } catch (err) {
-      console.error('[Todos] Insert error:', err.message);
       return createResponse({ error: 'Database query error', details: err.message }, 500);
     }
   }
@@ -123,28 +118,35 @@ module.exports = async (req) => {
         return createResponse({ error: 'User ID is required' }, 401);
       }
       
-      // Verify ownership
+      const numericId = parseInt(id, 10);
+      const numericUserId = parseInt(userId, 10);
+      
+      if (isNaN(numericId)) {
+        return createResponse({ error: 'Invalid todo ID' }, 400);
+      }
+      
       const existingTodo = await fastQuery('todos', {
-        filters: { 'id': id, 'user_id': userId },
+        filters: { 'id': numericId, 'user_id': numericUserId },
         timeout: 2000
       });
       
       if (!existingTodo || existingTodo.length === 0) {
-        return createResponse({ error: 'Todo not found or access denied' }, 404);
+        return createResponse({ error: 'Todo not found' }, 404);
       }
 
       const body = await parseBody(req);
-      const { text, completed, expiry_date } = body;
+      const { text, completed, expiry_date, is_deleted, deleted_at } = body;
 
       const updateData = {};
       if (text !== undefined) updateData.text = text;
       if (completed !== undefined) updateData.completed = completed;
       if (expiry_date !== undefined) updateData.expiry_date = expiry_date;
+      if (is_deleted !== undefined) updateData.is_deleted = is_deleted;
+      if (deleted_at !== undefined) updateData.deleted_at = deleted_at;
 
-      const updatedTodo = await fastUpdate('todos', id, updateData, 3000);
+      const updatedTodo = await fastUpdate('todos', numericId, updateData, 3000);
       return createResponse(updatedTodo || { error: 'Todo not found' }, updatedTodo ? 200 : 404);
     } catch (err) {
-      console.error('[Todos] Update error:', err.message);
       return createResponse({ error: 'Database query error', details: err.message }, 500);
     }
   }
@@ -174,7 +176,6 @@ module.exports = async (req) => {
       }, 3000);
       return createResponse(updatedTodo || { error: 'Todo not found' }, updatedTodo ? 200 : 404);
     } catch (err) {
-      console.error('[Todos] Restore error:', err.message);
       return createResponse({ error: 'Database query error', details: err.message }, 500);
     }
   }
@@ -186,23 +187,28 @@ module.exports = async (req) => {
         return createResponse({ error: 'User ID is required' }, 401);
       }
       
-      // Verify ownership
+      const numericId = parseInt(id, 10);
+      const numericUserId = parseInt(userId, 10);
+      
+      if (isNaN(numericId)) {
+        return createResponse({ error: 'Invalid todo ID' }, 400);
+      }
+      
       const existingTodo = await fastQuery('todos', {
-        filters: { 'id': id, 'user_id': userId },
+        filters: { 'id': numericId, 'user_id': numericUserId },
         timeout: 2000
       });
       
       if (!existingTodo || existingTodo.length === 0) {
-        return createResponse({ error: 'Todo not found or access denied' }, 404);
+        return createResponse({ error: 'Todo not found' }, 404);
       }
       
-      const updatedTodo = await fastUpdate('todos', id, {
+      const updatedTodo = await fastUpdate('todos', numericId, {
         is_deleted: true,
         deleted_at: new Date().toISOString()
       }, 3000);
       return createResponse({ message: 'Todo deleted successfully' }, 200);
     } catch (err) {
-      console.error('[Todos] Delete error:', err.message);
       return createResponse({ error: 'Database query error', details: err.message }, 500);
     }
   }
@@ -229,7 +235,6 @@ module.exports = async (req) => {
       await fastDelete('todos', todoId, 3000);
       return createResponse({ message: 'Todo permanently deleted' }, 200);
     } catch (err) {
-      console.error('[Todos] Permanent delete error:', err.message);
       return createResponse({ error: 'Database query error', details: err.message }, 500);
     }
   }

@@ -1,0 +1,3 @@
+# This file ensures docker compose stays in foreground
+# No additional configuration needed - docker compose up should stay attached by default
+

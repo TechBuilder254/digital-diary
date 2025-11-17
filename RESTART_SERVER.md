@@ -14,7 +14,7 @@ The API is still returning all users' data because the server is running **old c
 
 ### 2. Restart the Server
 ```bash
-cd /home/techbuilder/Desktop/Dg/digital-diary
+cd /path/to/digital-diary
 node server-dev.js
 ```
 
