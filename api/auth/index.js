@@ -82,15 +82,22 @@ async function handleLogin(body) {
   const trimmedUsername = username.trim();
 
   try {
-    // Use optimized fastQuery for maximum speed
+    // Use optimized fastQuery with shorter timeout for Vercel
     const { fastQuery } = require('../../lib/supabase-rest');
     
-    const users = await fastQuery('users', {
+    // Set aggressive timeout for Vercel (3 seconds max for query)
+    const queryPromise = fastQuery('users', {
       filters: { 'username': trimmedUsername },
       select: 'id,username,email,password',
       limit: 1,
-      timeout: 1500
+      timeout: 3000
     });
+
+    const queryTimeout = new Promise((_, reject) => 
+      setTimeout(() => reject(new Error('Database query timeout')), 3000)
+    );
+
+    const users = await Promise.race([queryPromise, queryTimeout]);
 
     if (!users || users.length === 0) {
       return createResponse({ message: 'Invalid credentials' }, 401);
@@ -98,8 +105,17 @@ async function handleLogin(body) {
 
     const user = users[0];
 
-    // Direct bcrypt comparison - no timeout wrapper needed (bcrypt is fast)
-    const isMatch = await bcrypt.compare(password, user.password);
+    if (!user.password) {
+      return createResponse({ message: 'Invalid credentials' }, 401);
+    }
+
+    // Bcrypt comparison with timeout (max 2 seconds)
+    const comparePromise = bcrypt.compare(password, user.password);
+    const compareTimeout = new Promise((_, reject) => 
+      setTimeout(() => reject(new Error('Password comparison timeout')), 2000)
+    );
+
+    const isMatch = await Promise.race([comparePromise, compareTimeout]);
 
     if (isMatch) {
       return createResponse({
@@ -112,6 +128,13 @@ async function handleLogin(body) {
       return createResponse({ message: 'Invalid credentials' }, 401);
     }
   } catch (error) {
+    // Return faster error responses
+    if (error.message.includes('timeout')) {
+      return createResponse({ 
+        message: 'Request timeout. Please try again.', 
+        error: 'Service temporarily unavailable' 
+      }, 504);
+    }
     return createResponse({ message: 'Login failed', error: error.message }, 500);
   }
 }
