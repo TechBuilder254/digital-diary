@@ -38,44 +38,6 @@ const bounceIn = {
   },
 };
 
-const bounceInLeft = {
-  hidden: { 
-    opacity: 0, 
-    x: -60,
-    scale: 0.9,
-  },
-  visible: { 
-    opacity: 1, 
-    x: 0,
-    scale: 1,
-    transition: {
-      type: "spring",
-      stiffness: 100,
-      damping: 12,
-      mass: 0.8,
-    }
-  },
-};
-
-const bounceInRight = {
-  hidden: { 
-    opacity: 0, 
-    x: 60,
-    scale: 0.9,
-  },
-  visible: { 
-    opacity: 1, 
-    x: 0,
-    scale: 1,
-    transition: {
-      type: "spring",
-      stiffness: 100,
-      damping: 12,
-      mass: 0.8,
-    }
-  },
-};
-
 const staggerParent = {
   hidden: {},
   visible: {
@@ -91,13 +53,6 @@ type Feature = {
   title: string;
   description: string;
   icon: React.ReactNode;
-};
-
-type Spotlight = {
-  name: string;
-  major: string;
-  story: string;
-  stats: string;
 };
 
 type JourneyEvent = {
@@ -173,29 +128,6 @@ const LandingPage: React.FC = () => {
     [],
   );
 
-  const spotlights = useMemo<Spotlight[]>(
-    () => [
-      {
-        name: 'Sarah',
-        major: 'Daily user',
-        story: 'Uses Digital Diary to track moods, organize tasks, and reflect on daily experiences.',
-        stats: 'Active user',
-      },
-      {
-        name: 'Mike',
-        major: 'Productivity focused',
-        story: 'Manages tasks and to-dos efficiently, keeping everything organized in one place.',
-        stats: 'Task master',
-      },
-      {
-        name: 'Emma',
-        major: 'Creative writer',
-        story: 'Captures thoughts in diary entries and audio notes, organizing with tags and categories.',
-        stats: 'Creative mind',
-      },
-    ],
-    [],
-  );
 
   const journey = useMemo<JourneyEvent[]>(
     () => [
